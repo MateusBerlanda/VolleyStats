@@ -1,7 +1,6 @@
 "use strict";
 
 // ===== ESTADO =====
-const CHAVE_STORAGE = "volleyStats_jogos";
 let categoriaAtiva = "F";   // "F" = Feminino, "M" = Masculino
 let jogosDaTemporada = [];
 let rodadaAtiva = "";   // ex.: "T-1" = Turno, rodada 1 ("" = escolher automaticamente)
@@ -17,15 +16,10 @@ const imgTime = (time, classe = "logo-time") =>
     `<img src="${esc(time.logo)}" alt="" class="${classe}" loading="lazy"
           onerror="this.onerror=null;this.src='img/logo_reduzida.png'">`;
 
-// ===== PERSISTÊNCIA =====
-function salvarJogos() {
-    try { localStorage.setItem(CHAVE_STORAGE, JSON.stringify(jogosDaTemporada)); }
-    catch (e) { console.warn("Não foi possível salvar no navegador:", e); }
-}
-
+// ===== DADOS =====
 function carregarJogos() {
-    jogosDaTemporada = montarJogos();   // calendário do teams.js + resultados (do navegador ou do dados.json)
-    // (não salva aqui: só grava no navegador quando você muda algo, senão o dados.json nunca seria usado)
+    // calendário do teams.js + resultados finalizados no admin (navegador ou dados.json)
+    jogosDaTemporada = montarJogos();
 }
 
 // ===== CLASSIFICAÇÃO =====
@@ -96,7 +90,6 @@ function renderizarJogos() {
     const times = obterTimes();
     const doTime = (id) => times.find((t) => t.id === id);
     let cards = "";
-    let opcoes = '<option value="">-- Selecione uma partida --</option>';
 
     // Filtro de rodada (são 22 rodadas por categoria)
     const daCategoria = jogosDaTemporada.filter((j) => j.categoria === categoriaAtiva);
@@ -123,14 +116,10 @@ function renderizarJogos() {
                     <div class="placar-jogo">${placar}</div>
                     <div>${imgTime(fora, "")}${esc(fora.nome)}</div>
                 </div>
-                ${jogo.jogado ? `<button class="btn-desfazer" data-id="${jogo.idJogo}">Desfazer resultado</button>` : ""}
             </article>`;
-
-        if (!jogo.jogado) opcoes += `<option value="${jogo.idJogo}">${esc(casa.nome)} vs ${esc(fora.nome)}</option>`;
     });
 
     $("lista-confrontos").innerHTML = cards || "<p>Nenhum jogo cadastrado.</p>";
-    $("selecao-jogo").innerHTML = opcoes;
 }
 
 function renderizarListaEquipes() {
@@ -210,44 +199,6 @@ function trocarCategoria(cat) {
 }
 $("btn-fem").addEventListener("click", () => trocarCategoria("F"));
 $("btn-masc").addEventListener("click", () => trocarCategoria("M"));
-
-$("form-resultado").addEventListener("submit", (e) => {
-    e.preventDefault();
-    const id = parseInt($("selecao-jogo").value, 10);
-    const setsM = parseInt($("placar-mandante").value, 10);
-    const setsV = parseInt($("placar-visitante").value, 10);
-
-    // Vôlei: exatamente um time chega a 3 sets e o outro fica com 0, 1 ou 2
-    if ((setsM === 3) === (setsV === 3)) {
-        alert("Placar inválido! Um time deve vencer com 3 sets.");
-        return;
-    }
-    const jogo = jogosDaTemporada.find((j) => j.idJogo === id);
-    if (!jogo) return;
-
-    Object.assign(jogo, { setsMandante: setsM, setsVisitante: setsV, jogado: true });
-    salvarJogos();
-    $("form-resultado").reset();
-    renderizarTudo();
-});
-
-// Desfazer resultado (delegação: um único listener para todos os botões)
-$("lista-confrontos").addEventListener("click", (e) => {
-    const btn = e.target.closest(".btn-desfazer");
-    if (!btn) return;
-    const jogo = jogosDaTemporada.find((j) => j.idJogo === parseInt(btn.dataset.id, 10));
-    if (!jogo || !confirm("Desfazer este resultado?")) return;
-    Object.assign(jogo, { setsMandante: null, setsVisitante: null, jogado: false });
-    salvarJogos();
-    renderizarTudo();
-});
-
-$("btn-reset").addEventListener("click", () => {
-    if (!confirm("Isso apaga TODOS os resultados salvos. Continuar?")) return;
-    localStorage.removeItem(CHAVE_STORAGE);
-    carregarJogos();
-    renderizarTudo();
-});
 
 $("filtro-rodada").addEventListener("change", (e) => { rodadaAtiva = e.target.value; renderizarJogos(); });
 function navegarRodadaPublica(direcao) {

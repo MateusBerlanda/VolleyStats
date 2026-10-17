@@ -7,7 +7,7 @@
     --texto: #182230;
     --borda: #dde3ec;
     --vermelho: #c62839;
-    --vermelho-medio: #bb3c49;
+    --vermelho-medio: #c8404e;
     --ok: #1f8a3b;
 }
 
@@ -755,16 +755,79 @@ footer {
 
 /* Navegação em carrossel entre rodadas */
 .rodada-carrossel {
-    display: flex; align-items: center; justify-content: space-between; gap: 16px;
-    width: min(100%, 420px); margin: 18px 0 20px; padding: 12px 14px;
-    background: #fff; border: 1px solid var(--borda, #dde3ec); border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    width: min(100%, 420px);
+    margin: 18px 0 20px;
+    padding: 12px 14px;
+    background: #fff;
+    border: 1px solid var(--borda, #dde3ec);
+    border-radius: 16px;
     box-shadow: 0 5px 18px rgba(16, 42, 86, .06);
 }
-.rodada-titulo-wrap { display: flex; flex: 1; min-width: 0; flex-direction: column; align-items: center; gap: 2px; text-align: center; color: var(--azul, #102a56); }
-.rodada-titulo-wrap strong { font-size: 16px; }
-.rodada-legenda { font-size: 10px; font-weight: 800; letter-spacing: .12em; color: #77849a; }
-.seta-rodada { display: grid; place-items: center; flex: 0 0 42px; width: 42px; height: 42px; border: 0; border-radius: 12px; background: #fce8f0; color: var(--rosa, #e5457f); font-size: 30px; line-height: 1; cursor: pointer; transition: .18s ease; }
-.seta-rodada:hover:not(:disabled) { color: #fff; background: var(--rosa, #e5457f); transform: translateY(-1px); }
-.seta-rodada:disabled { opacity: .32; cursor: not-allowed; }
-.admin-rodada-carrossel { width: 100%; margin-top: 8px; }
-@media (max-width: 600px) { .rodada-carrossel { width: 100%; } #lista-confrontos.grade-jogos { grid-template-columns: 1fr; } }
+
+.rodada-titulo-wrap {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    text-align: center;
+    color: var(--azul, #102a56);
+}
+
+.rodada-titulo-wrap strong {
+    font-size: 16px;
+}
+
+.rodada-legenda {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .12em;
+    color: #77849a;
+}
+
+.seta-rodada {
+    display: grid;
+    place-items: center;
+    flex: 0 0 42px;
+    width: 42px;
+    height: 42px;
+    border: 0;
+    border-radius: 12px;
+    background: #fce8f0;
+    color: var(--rosa, #e5457f);
+    font-size: 30px;
+    line-height: 1;
+    cursor: pointer;
+    transition: .18s ease;
+}
+
+.seta-rodada:hover:not(:disabled) {
+    color: #fff;
+    background: var(--rosa, #e5457f);
+    transform: translateY(-1px);
+}
+
+.seta-rodada:disabled {
+    opacity: .32;
+    cursor: not-allowed;
+}
+
+.admin-rodada-carrossel {
+    width: 100%;
+    margin-top: 8px;
+}
+
+@media (max-width: 600px) {
+    .rodada-carrossel {
+        width: 100%;
+    }
+
+    #lista-confrontos.grade-jogos {
+        grid-template-columns: 1fr;
+    }
+}

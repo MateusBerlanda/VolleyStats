@@ -37,24 +37,50 @@ const tiposDePonto = STATS.filter((s) => s.tipo === "ponto").map((s) => s.chave)
 const pontos = (idAtleta, jogo) => tiposDePonto.reduce((soma, tipo) => soma + contar(idAtleta, tipo, jogo), 0);
 const erros = (idAtleta, jogo) => contar(idAtleta, "erro", jogo);
 
-// Placar em pontos calculado diretamente do histórico de jogadas do jogo.
-// Ataque/bloqueio/saque vencedor pontua para o time da atleta; erro pontua para o adversário.
+// Placar por sets, reconstruído a partir do histórico para continuar correto
+// quando uma jogada é excluída. Sets 1–4 vão a 25; o 5º vai a 15, sempre
+// exigindo dois pontos de diferença. Melhor de cinco sets (vence quem fizer 3).
 function calcularPlacarPontos(jogo) {
-    if (!jogo) return { mandante: 0, visitante: 0 };
+    const resultado = { mandante: 0, visitante: 0, setsMandante: 0, setsVisitante: 0,
+        setAtual: 1, encerrado: false, ultimoSet: null };
+    if (!jogo) return resultado;
     const porId = new Map(atletas.map((a) => [String(a.id), a]));
-    const total = { mandante: 0, visitante: 0 };
-    jogadas.filter((x) => x.idJogo === jogo.idJogo).forEach((x) => {
+    const eventos = jogadas
+        .map((x, i) => ({ ...x, __ordem: i }))
+        .filter((x) => String(x.idJogo) === String(jogo.idJogo))
+        .sort((a, b) => Number(a.ts || 0) - Number(b.ts || 0) || a.__ordem - b.__ordem);
+
+    for (const x of eventos) {
         const atleta = porId.get(String(x.idAtleta));
-        if (!atleta) return;
-        const ladoAtleta = atleta.idTime === jogo.idMandante ? "mandante"
-            : atleta.idTime === jogo.idVisitante ? "visitante" : null;
-        if (!ladoAtleta) return;
+        if (!atleta || resultado.encerrado) continue;
+        const ladoAtleta = String(atleta.idTime) === String(jogo.idMandante) ? 'mandante'
+            : String(atleta.idTime) === String(jogo.idVisitante) ? 'visitante' : null;
+        if (!ladoAtleta) continue;
         const stat = STATS.find((s) => s.chave === x.tipo);
-        if (!stat) return;
-        if (stat.tipo === "ponto") total[ladoAtleta]++;
-        else if (x.tipo === "erro") total[ladoAtleta === "mandante" ? "visitante" : "mandante"]++;
-    });
-    return total;
+        let ladoPonto = null;
+        if (stat?.tipo === 'ponto') ladoPonto = ladoAtleta;
+        else if (x.tipo === 'erro') ladoPonto = ladoAtleta === 'mandante' ? 'visitante' : 'mandante';
+        if (!ladoPonto) continue;
+
+        resultado[ladoPonto]++;
+        const alvo = resultado.setAtual === 5 ? 15 : 25;
+        const diferenca = Math.abs(resultado.mandante - resultado.visitante);
+        if (Math.max(resultado.mandante, resultado.visitante) >= alvo && diferenca >= 2) {
+            const vencedor = resultado.mandante > resultado.visitante ? 'mandante' : 'visitante';
+            if (vencedor === 'mandante') resultado.setsMandante++;
+            else resultado.setsVisitante++;
+            resultado.ultimoSet = { numero: resultado.setAtual, mandante: resultado.mandante,
+                visitante: resultado.visitante, vencedor };
+            if (resultado.setsMandante === 3 || resultado.setsVisitante === 3) {
+                resultado.encerrado = true;
+            } else {
+                resultado.setAtual++;
+                resultado.mandante = 0;
+                resultado.visitante = 0;
+            }
+        }
+    }
+    return resultado;
 }
 
 // Reduz a foto para 128x128 (recorte quadrado) em JPEG: ~5 KB, cabe no localStorage
@@ -75,6 +101,16 @@ function processarFoto(arquivo) {
         img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("imagem inválida")); };
         img.src = url;
     });
+}
+
+// Se uma jogada de partida finalizada for corrigida, tira o resultado da tabela
+// até que a partida seja finalizada novamente com o placar corrigido.
+function invalidarResultadoSalvo(idAlterado) {
+    const salvos = ler(K_JOGOS);
+    const atualizados = salvos.filter((x) => String(x.idJogo) !== String(idAlterado));
+    if (atualizados.length !== salvos.length) gravar(K_JOGOS, atualizados);
+    const jogo = jogos.find((x) => String(x.idJogo) === String(idAlterado));
+    if (jogo) { jogo.jogado = false; jogo.setsMandante = null; jogo.setsVisitante = null; }
 }
 
 // ===== RENDERIZAÇÃO =====
@@ -103,6 +139,13 @@ function renderizarResumo() {
     const placar = calcularPlacarPontos(j);
     const errosCasa = elencoDe(j.idMandante).reduce((s, a) => s + erros(a.id, idJogo), 0);
     const errosFora = elencoDe(j.idVisitante).reduce((s, a) => s + erros(a.id, idJogo), 0);
+    const estadoSet = placar.encerrado ? "Partida encerrada" : `Set ${placar.setAtual}`;
+    const setsResumo = `Sets: ${placar.setsMandante} – ${placar.setsVisitante}`;
+    const notaFinal = j.jogado
+        ? `<small class="partida-encerrada">Partida finalizada e contabilizada · ${setsResumo}</small>`
+        : placar.encerrado
+            ? `<small class="partida-encerrada">Fim de jogo · ${setsResumo}</small><button type="button" id="btn-finalizar-partida" class="btn-finalizar-partida">Finalizar partida e atualizar classificação</button>`
+            : `<small class="sets-resumo">${setsResumo}</small>`;
     $("resumo-jogo").innerHTML = `
         <div class="placar-painel" role="status" aria-live="polite">
             <div class="placar-time casa">
@@ -110,14 +153,17 @@ function renderizarResumo() {
                 <strong class="placar-nome">${esc(casa ? casa.nome : "Mandante")}</strong>
                 <span class="placar-pontos">${placar.mandante}</span>
                 <small>${errosFora} erro(s) do adversário</small>
+                <span class="sets-time">${placar.setsMandante} set(s)</span>
             </div>
-            <div class="placar-centro"><span>PLACAR</span><b>—</b></div>
+            <div class="placar-centro"><span>${esc(estadoSet.toUpperCase())}</span><b>×</b><small>${setsResumo}</small></div>
             <div class="placar-time fora">
                 <span class="placar-selo">FORA</span>
                 <strong class="placar-nome">${esc(fora ? fora.nome : "Visitante")}</strong>
                 <span class="placar-pontos">${placar.visitante}</span>
                 <small>${errosCasa} erro(s) do adversário</small>
+                <span class="sets-time">${placar.setsVisitante} set(s)</span>
             </div>
+            ${notaFinal}
         </div>`;
     $("btn-casa").textContent = casa ? casa.nome : "Casa";
     $("btn-fora").textContent = fora ? fora.nome : "Fora";
@@ -126,6 +172,7 @@ function renderizarResumo() {
 function renderizarCards() {
     const time = timeAtual();
     if (!time) { $("cards").innerHTML = "<p>Escolha um jogo.</p>"; return; }
+    const partidaEncerrada = calcularPlacarPontos(jogoAtual()).encerrado;
     $("cards").innerHTML = elencoDe(time.id).map((a) => `
         <div class="atleta">
             <div class="atleta-topo">
@@ -138,7 +185,7 @@ function renderizarCards() {
             </div>
             <div class="botoes-stat">
                 ${STATS.map((s) => `
-                    <button class="btn-stat ${s.tipo}" data-atleta="${a.id}" data-tipo="${s.chave}">
+                    <button class="btn-stat ${s.tipo}" data-atleta="${a.id}" data-tipo="${s.chave}" ${partidaEncerrada ? "disabled title=\"Partida encerrada\"" : ""}>
                         + ${s.rotulo}<small>${contar(a.id, s.chave, idJogo)}</small>
                     </button>`).join("")}
             </div>
@@ -219,11 +266,12 @@ function renderizarTudo() {
 // ===== FORMULÁRIO DE ATLETA =====
 function limparForm() {
     $("form-atleta").reset();
+    $("form-atleta").hidden = true;
     editandoId = null;
     fotoPendente = undefined;
     $("previa-foto").src = AVATAR;
-    $("btn-salvar-atleta").textContent = "Adicionar atleta";
-    $("btn-cancelar").hidden = true;
+    $("btn-salvar-atleta").textContent = "Salvar alterações";
+    $("btn-cancelar").hidden = false;
 }
 
 $("atleta-foto").addEventListener("change", async (e) => {
@@ -237,6 +285,7 @@ $("atleta-foto").addEventListener("change", async (e) => {
 
 $("form-atleta").addEventListener("submit", (e) => {
     e.preventDefault();
+    if (!editandoId) return;
     const numero = parseInt($("atleta-numero").value, 10);
     const nome = $("atleta-nome").value.trim();
     const posicao = $("atleta-posicao").value;
@@ -246,40 +295,16 @@ $("form-atleta").addEventListener("submit", (e) => {
         alert(`Já existe a camisa ${numero} em ${time.nome}.`);
         return;
     }
-    if (editandoId) {
-        const a = atletas.find((x) => x.id === editandoId);
-        Object.assign(a, { nome, numero, posicao });
-        if (fotoPendente !== undefined) a.foto = fotoPendente;
-    } else {
-        atletas.push({ id: novoId(), categoria, idTime: timeElenco, nome, numero, posicao, foto: fotoPendente || "" });
-    }
+    const a = atletas.find((x) => x.id === editandoId);
+    if (!a) return;
+    Object.assign(a, { nome, numero, posicao });
+    if (fotoPendente !== undefined) a.foto = fotoPendente;
     gravar(K_ATLETAS, atletas);
     limparForm();
     renderizarTudo();
 });
 
 $("btn-cancelar").addEventListener("click", limparForm);
-
-// Cadastro em lote: "número;nome;posição" por linha
-$("btn-lote").addEventListener("click", () => {
-    const existentes = new Set(elencoDe(timeElenco).map((a) => a.numero));
-    const ignoradas = [];
-    let ok = 0;
-    $("texto-lote").value.split("\n").forEach((linha) => {
-        if (!linha.trim()) return;
-        const [n, nome, pos] = linha.split(/[;\t]/).map((s) => s.trim());
-        const numero = parseInt(n, 10);
-        if (isNaN(numero) || !nome || existentes.has(numero)) { ignoradas.push(linha.trim()); return; }
-        existentes.add(numero);
-        atletas.push({ id: novoId(), categoria, idTime: timeElenco, nome, numero, posicao: acharPosicao(pos), foto: "" });
-        ok++;
-    });
-    gravar(K_ATLETAS, atletas);
-    $("texto-lote").value = ignoradas.join("\n");   // o que sobrar fica na caixa para corrigir
-    alert(`${ok} atleta(s) adicionado(s).` + (ignoradas.length
-        ? ` ${ignoradas.length} linha(s) ignorada(s) e mantida(s) na caixa: número inválido, sem nome ou camisa repetida.` : ""));
-    renderizarTudo();
-});
 
 // Editar / remover na lista do elenco
 $("lista-elenco").addEventListener("click", (e) => {
@@ -288,6 +313,7 @@ $("lista-elenco").addEventListener("click", (e) => {
         const a = atletas.find((x) => x.id === ed.dataset.editar);
         if (!a) return;
         editandoId = a.id;
+        $("form-atleta").hidden = false;
         fotoPendente = undefined;
         $("atleta-numero").value = a.numero;
         $("atleta-nome").value = a.nome;
@@ -353,10 +379,47 @@ $("sel-rodada").addEventListener("change", (e) => {
 });
 $("sel-jogo").addEventListener("change", (e) => { idJogo = parseInt(e.target.value, 10) || null; renderizarTudo(); });
 
+// Finaliza o jogo somente quando uma equipe venceu 3 sets. O resultado salvo
+// é consumido pela página pública para atualizar a classificação da Superliga.
+$("resumo-jogo").addEventListener("click", (e) => {
+    const botao = e.target.closest("#btn-finalizar-partida");
+    if (!botao) return;
+    const jogo = jogoAtual();
+    const placar = calcularPlacarPontos(jogo);
+    if (!jogo || !placar.encerrado || (placar.setsMandante !== 3 && placar.setsVisitante !== 3)) {
+        alert("A partida só pode ser finalizada quando uma equipe vencer 3 sets.");
+        return;
+    }
+    const casa = timesDaCategoria().find((t) => String(t.id) === String(jogo.idMandante));
+    const fora = timesDaCategoria().find((t) => String(t.id) === String(jogo.idVisitante));
+    const vencedor = placar.setsMandante === 3 ? casa : fora;
+    if (!confirm(`Finalizar ${casa?.nome || "mandante"} ${placar.setsMandante} × ${placar.setsVisitante} ${fora?.nome || "visitante"}?\n\n${vencedor?.nome || "A equipe vencedora"} será registrada como vencedora e a classificação será atualizada.`)) return;
+
+    const salvos = ler(K_JOGOS).filter((x) => String(x.idJogo) !== String(jogo.idJogo));
+    salvos.push({
+        idJogo: jogo.idJogo,
+        categoria: jogo.categoria,
+        idMandante: jogo.idMandante,
+        idVisitante: jogo.idVisitante,
+        setsMandante: placar.setsMandante,
+        setsVisitante: placar.setsVisitante,
+        jogado: true,
+        finalizadoEm: new Date().toISOString()
+    });
+    if (!gravar(K_JOGOS, salvos)) return;
+    Object.assign(jogo, { setsMandante: placar.setsMandante, setsVisitante: placar.setsVisitante, jogado: true });
+    renderizarTudo();
+    alert("Partida finalizada! O resultado foi salvo e já conta na classificação deste navegador.");
+});
+
 // Cada toque num botão vira uma jogada
 $("cards").addEventListener("click", (e) => {
     const stat = e.target.closest(".btn-stat");
     if (!stat) return;
+    if (calcularPlacarPontos(jogoAtual()).encerrado) {
+        alert("Esta partida já foi encerrada. Exclua uma jogada do histórico se precisar corrigir o placar.");
+        return;
+    }
     jogadas.push({ id: novoId(), idJogo, idAtleta: stat.dataset.atleta, tipo: stat.dataset.tipo, ts: Date.now() });
     gravar(K_JOGADAS, jogadas);
     if (navigator.vibrate) navigator.vibrate(30);   // feedback no celular
@@ -375,14 +438,17 @@ $("log").addEventListener("click", (e) => {
     if (!confirm(`Excluir somente a jogada de ${nome}? O placar e as estatísticas serão recalculados.`)) return;
     jogadas = jogadas.filter((j) => String(j.id) !== String(idRemover));
     gravar(K_JOGADAS, jogadas);
+    invalidarResultadoSalvo(jogada.idJogo);
     renderizarTudo();
 });
 
 $("btn-desfazer").addEventListener("click", () => {
     for (let i = jogadas.length - 1; i >= 0; i--) {
         if (jogadas[i].idJogo === idJogo) {
+            const idJogoAlterado = jogadas[i].idJogo;
             jogadas.splice(i, 1);
             gravar(K_JOGADAS, jogadas);
+            invalidarResultadoSalvo(idJogoAlterado);
             renderizarTudo();
             return;
         }

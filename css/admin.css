@@ -34,7 +34,7 @@ main section {
     overflow-wrap: anywhere;
 }
 
-
+/* Estilos exclusivos do painel admin (usa as variáveis e o .campo de style.css) */
 .voltar {
     color: white;
 }
@@ -113,6 +113,7 @@ main section {
     background: var(--fundo);
     border-radius: 10px;
     padding: 12px;
+    width: 1000px;
 }
 
 .atleta-topo {
@@ -198,7 +199,7 @@ main section {
     font-size: .85rem;
 }
 
-.perigo {
+.btn-mini.perigo {
     border-color: var(--vermelho-medio);
     color: var(--vermelho-medio);
 }
@@ -479,54 +480,72 @@ main section {
     }
 }
 
-/* Correções de largura do painel administrativo */
-main,
-main>section,
-#cards,
-.atleta,
-.lista-elenco,
-.linha-atleta,
-#elenco,
-#tabela,
-.tabela-wrap {
-    min-width: 0;
-    max-width: 100%;
+/* Informação de sets no placar ao vivo */
+.placar-centro small,
+.sets-resumo {
+    font-size: .72rem;
+    font-weight: 800;
+    color: #52627a;
+    text-align: center;
 }
 
-.cards-atletas {
-    grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+.sets-time {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: #edf2fb;
+    color: #102a56;
+    font-size: .72rem;
+    font-weight: 800;
 }
 
-/* Os campos dentro de barras flexíveis não devem somar 100% + outros campos */
-.barra>.campo:not(.curto) {
-    flex: 1 1 180px;
-    width: auto;
-    min-width: 0;
+.placar-painel .sets-resumo,
+.placar-painel .partida-encerrada {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding-top: 8px;
+    border-top: 1px solid #dce5f2;
 }
 
-.linha-atleta>* {
-    min-width: 0;
-    max-width: 100%;
+.partida-encerrada {
+    color: #16734a;
+    font-size: .78rem;
+    font-weight: 800;
 }
 
-#texto-lote,
-#form-atleta,
-#form-atleta .foto-campo,
-.placar-painel {
-    min-width: 0;
-    max-width: 100%;
+.btn-stat:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+    filter: grayscale(.3);
 }
 
-.tabela-wrap {
-    overflow-x: auto;
+
+/* Finalização explícita da partida */
+.btn-finalizar-partida {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    padding: 13px 18px;
+    border: 0;
+    border-radius: 12px;
+    background: #16804a;
+    color: #fff;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 5px 14px rgba(22, 128, 74, .18);
+    transition: transform .15s ease, background .15s ease;
 }
 
-@media (max-width: 480px) {
-    .placar-painel {
-        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    }
-
-    .linha-atleta {
-        flex-wrap: wrap;
-    }
+.btn-finalizar-partida:hover {
+    background: #11683c;
+    transform: translateY(-1px);
 }
+
+.btn-finalizar-partida:focus-visible {
+    outline: 3px solid #83d8aa;
+    outline-offset: 3px;
+}
+/* O formulário de edição só aparece quando uma atleta é selecionada. */
+.form-atleta[hidden] { display: none !important; }

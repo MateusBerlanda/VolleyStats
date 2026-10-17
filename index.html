@@ -25,7 +25,7 @@
             <a href="#classificacao" class="link-nav">Classificação</a>
             <a href="#atletas" class="link-nav">Atletas</a>
             <a href="#equipes" class="link-nav">Equipes</a>
-            <a href="#admin" class="link-nav">Admin</a>
+            <a href="admin.html" class="link-nav">Admin</a>
         </nav>
     </header>
 
@@ -59,8 +59,6 @@
             <div id="lista-confrontos" class="grade-jogos"></div>
         </section>
 
-        <!-- MANTENHA AQUI AS DEMAIS SEÇÕES: classificação, atletas, equipes e admin -->
-
         <section id="classificacao">
             <h2>Classificação</h2>
             <div id="container-tabela" class="tabela-wrap"></div>
@@ -89,31 +87,6 @@
         <section id="equipes">
             <h2>Equipes</h2>
             <div id="lista-equipes" class="lista-equipes"></div>
-        </section>
-
-        <!-- ÁREA ADMIN (depois será protegida por login) -->
-        <section id="admin">
-            <details class="gerenciador">
-                <summary>Área do administrador</summary>
-                <p style="margin-top:12px"><a href="admin.html"><strong>Abrir painel de atletas →</strong></a></p>
-
-                <form id="form-resultado" class="form-resultado">
-                    <label for="selecao-jogo" class="sr-only">Jogo</label>
-                    <select id="selecao-jogo" required></select>
-
-                    <label for="placar-mandante" class="sr-only">Sets do mandante</label>
-                    <input type="number" id="placar-mandante" class="placar" min="0" max="3" inputmode="numeric"
-                        placeholder="Casa" required>
-                    <span aria-hidden="true">x</span>
-                    <label for="placar-visitante" class="sr-only">Sets do visitante</label>
-                    <input type="number" id="placar-visitante" class="placar" min="0" max="3" inputmode="numeric"
-                        placeholder="Fora" required>
-
-                    <button class="btn-salvar" type="submit">Salvar placar</button>
-                </form>
-
-                <button id="btn-reset" class="btn-reset" type="button">Zerar todos os dados</button>
-            </details>
         </section>
     </main>
 

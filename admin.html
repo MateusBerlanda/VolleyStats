@@ -46,7 +46,7 @@
         </section>
 
         <!-- 2) LANÇAR JOGADAS -->
-        <section>
+        <section class="prin">
             <h2>Lançar jogadas</h2>
             <div class="abas">
                 <button id="btn-casa" class="tab ativo" aria-pressed="true">Casa</button>
@@ -65,11 +65,12 @@
         <!-- 4) ELENCO: cadastro completo de cada time -->
         <section id="elenco">
             <h2>Elenco pré-cadastrado</h2>
+            <p class="legenda">O elenco é definido no código. Use “Editar” para corrigir os dados de uma atleta já cadastrada.</p>
             <p class="legenda">Os atletas-base vêm do código em <code>js/atletas.js</code>. Números e posições não confirmados aparecem como “—” ou “Sem posição”; revise-os com fontes oficiais antes de usar em partidas reais.</p>
             <label for="sel-time" class="rotulo">Time</label>
             <select id="sel-time" class="campo"></select>
 
-            <form id="form-atleta" class="form-atleta">
+            <form id="form-atleta" class="form-atleta" hidden>
                 <div class="foto-campo">
                     <img id="previa-foto" class="foto-media" alt="Prévia da foto">
                     <label class="btn-mini" for="atleta-foto">Escolher foto</label>
@@ -86,20 +87,12 @@
                 <label class="sr-only" for="atleta-posicao">Posição</label>
                 <select id="atleta-posicao" class="campo"></select>
                 <div class="barra">
-                    <button id="btn-salvar-atleta" class="btn-salvar" type="submit">Adicionar atleta</button>
+                    <button id="btn-salvar-atleta" class="btn-salvar" type="submit">Salvar alterações</button>
                     <button id="btn-cancelar" class="btn-mini" type="button" hidden>Cancelar edição</button>
                 </div>
             </form>
 
-            <details class="lote">
-                <summary>Cadastro em lote (colar a lista do time)</summary>
-                <p class="legenda">Um atleta por linha, no formato <code>número;nome;posição</code>.
-                    Posição: levantador(a), oposto(a), ponteiro(a), central ou líbero. As fotos podem ser adicionadas
-                    depois, em "Editar".</p>
-                <textarea id="texto-lote" class="campo area" rows="6"
-                    placeholder="1;Ana Souza;levantadora&#10;7;Bia Lima;ponteira&#10;9;Carla Dias;central"></textarea>
-                <button id="btn-lote" class="btn-salvar" type="button">Adicionar todos</button>
-            </details>
+
 
             <h3 id="contagem-elenco" class="subtitulo"></h3>
             <ul id="lista-elenco" class="lista-elenco"></ul>
