@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#102a56">
+    <title>Admin | VolleyStats</title>
+    <link rel="icon" type="image/png" href="img/logo_reduzida.png">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <script src="js/teams.js" defer></script>
+    <script src="js/atletas.js" defer></script>
+    <script src="js/admin.js" defer></script>
+</head>
+
+<body>
+    <header class="site-header">
+        <a href="index.html" class="logo">
+            <img src="img/logo.png" alt="VolleyStats - Página inicial">
+        </a>
+
+        <nav aria-label="Navegação principal">
+            <a href="index.html" class="link-nav">← Voltar ao site</a>
+        </nav>
+    </header>
+
+    <main>
+        <!-- 1) MODALIDADE E JOGO -->
+        <section>
+            <div class="abas">
+                <button id="btn-fem" class="tab ativo" aria-pressed="true">Feminino</button>
+                <button id="btn-masc" class="tab" aria-pressed="false">Masculino</button>
+            </div>
+            <div class="rodada-carrossel admin-rodada-carrossel" aria-label="Navegação entre rodadas">
+                <button type="button" id="admin-rodada-anterior" class="seta-rodada" aria-label="Rodada anterior">‹</button>
+                <div class="rodada-titulo-wrap"><span class="rodada-legenda">SELECIONE A RODADA</span><strong id="admin-rodada-titulo">Turno · Rodada 1</strong></div>
+                <button type="button" id="admin-rodada-proxima" class="seta-rodada" aria-label="Próxima rodada">›</button>
+            </div>
+            <label for="sel-rodada" class="rotulo sr-only">Rodada</label>
+            <select id="sel-rodada" class="campo sr-only" aria-hidden="true" tabindex="-1"></select>
+            <label for="sel-jogo" class="rotulo">Jogo</label>
+            <select id="sel-jogo" class="campo"></select>
+            <p id="resumo-jogo" class="resumo"></p>
+        </section>
+
+        <!-- 2) LANÇAR JOGADAS -->
+        <section>
+            <h2>Lançar jogadas</h2>
+            <div class="abas">
+                <button id="btn-casa" class="tab ativo" aria-pressed="true">Casa</button>
+                <button id="btn-fora" class="tab" aria-pressed="false">Fora</button>
+            </div>
+            <div id="cards" class="cards-atletas"></div>
+        </section>
+
+        <!-- 3) HISTÓRICO / DESFAZER -->
+        <section>
+            <h2>Últimas jogadas</h2>
+            <ul id="log" class="log"></ul>
+            <button id="btn-desfazer" class="btn-reset" type="button">Desfazer última jogada</button>
+        </section>
+
+        <!-- 4) ELENCO: cadastro completo de cada time -->
+        <section id="elenco">
+            <h2>Elenco pré-cadastrado</h2>
+            <p class="legenda">Os atletas-base vêm do código em <code>js/atletas.js</code>. Números e posições não confirmados aparecem como “—” ou “Sem posição”; revise-os com fontes oficiais antes de usar em partidas reais.</p>
+            <label for="sel-time" class="rotulo">Time</label>
+            <select id="sel-time" class="campo"></select>
+
+            <form id="form-atleta" class="form-atleta">
+                <div class="foto-campo">
+                    <img id="previa-foto" class="foto-media" alt="Prévia da foto">
+                    <label class="btn-mini" for="atleta-foto">Escolher foto</label>
+                    <input id="atleta-foto" type="file" accept="image/*" class="sr-only">
+                </div>
+                <div class="barra">
+                    <label class="sr-only" for="atleta-numero">Número da camisa</label>
+                    <input id="atleta-numero" class="campo curto" type="number" min="0" max="99" inputmode="numeric"
+                        placeholder="Nº" required>
+                    <label class="sr-only" for="atleta-nome">Nome</label>
+                    <input id="atleta-nome" class="campo" type="text" maxlength="40" placeholder="Nome do atleta"
+                        required>
+                </div>
+                <label class="sr-only" for="atleta-posicao">Posição</label>
+                <select id="atleta-posicao" class="campo"></select>
+                <div class="barra">
+                    <button id="btn-salvar-atleta" class="btn-salvar" type="submit">Adicionar atleta</button>
+                    <button id="btn-cancelar" class="btn-mini" type="button" hidden>Cancelar edição</button>
+                </div>
+            </form>
+
+            <details class="lote">
+                <summary>Cadastro em lote (colar a lista do time)</summary>
+                <p class="legenda">Um atleta por linha, no formato <code>número;nome;posição</code>.
+                    Posição: levantador(a), oposto(a), ponteiro(a), central ou líbero. As fotos podem ser adicionadas
+                    depois, em "Editar".</p>
+                <textarea id="texto-lote" class="campo area" rows="6"
+                    placeholder="1;Ana Souza;levantadora&#10;7;Bia Lima;ponteira&#10;9;Carla Dias;central"></textarea>
+                <button id="btn-lote" class="btn-salvar" type="button">Adicionar todos</button>
+            </details>
+
+            <h3 id="contagem-elenco" class="subtitulo"></h3>
+            <ul id="lista-elenco" class="lista-elenco"></ul>
+        </section>
+
+        <!-- 5) TOTAIS E BACKUP -->
+        <section>
+            <h2>Totais da temporada</h2>
+            <div id="tabela" class="tabela-wrap"></div>
+            <div class="barra backup">
+                <button id="btn-exportar" class="btn-salvar" type="button">Exportar backup (JSON)</button>
+                <label class="btn-mini" for="arquivo-backup">Importar backup</label>
+                <input id="arquivo-backup" type="file" accept="application/json,.json" class="sr-only">
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>VolleyStats © 2026</p>
+    </footer>
+</body>
+
+</html>
