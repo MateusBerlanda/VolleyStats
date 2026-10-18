@@ -40,47 +40,9 @@ const erros = (idAtleta, jogo) => contar(idAtleta, "erro", jogo);
 // Placar por sets, reconstruído a partir do histórico para continuar correto
 // quando uma jogada é excluída. Sets 1–4 vão a 25; o 5º vai a 15, sempre
 // exigindo dois pontos de diferença. Melhor de cinco sets (vence quem fizer 3).
+// O cálculo fica no placar.js (compartilhado com o site público)
 function calcularPlacarPontos(jogo) {
-    const resultado = { mandante: 0, visitante: 0, setsMandante: 0, setsVisitante: 0,
-        setAtual: 1, encerrado: false, ultimoSet: null };
-    if (!jogo) return resultado;
-    const porId = new Map(atletas.map((a) => [String(a.id), a]));
-    const eventos = jogadas
-        .map((x, i) => ({ ...x, __ordem: i }))
-        .filter((x) => String(x.idJogo) === String(jogo.idJogo))
-        .sort((a, b) => Number(a.ts || 0) - Number(b.ts || 0) || a.__ordem - b.__ordem);
-
-    for (const x of eventos) {
-        const atleta = porId.get(String(x.idAtleta));
-        if (!atleta || resultado.encerrado) continue;
-        const ladoAtleta = String(atleta.idTime) === String(jogo.idMandante) ? 'mandante'
-            : String(atleta.idTime) === String(jogo.idVisitante) ? 'visitante' : null;
-        if (!ladoAtleta) continue;
-        const stat = STATS.find((s) => s.chave === x.tipo);
-        let ladoPonto = null;
-        if (stat?.tipo === 'ponto') ladoPonto = ladoAtleta;
-        else if (x.tipo === 'erro') ladoPonto = ladoAtleta === 'mandante' ? 'visitante' : 'mandante';
-        if (!ladoPonto) continue;
-
-        resultado[ladoPonto]++;
-        const alvo = resultado.setAtual === 5 ? 15 : 25;
-        const diferenca = Math.abs(resultado.mandante - resultado.visitante);
-        if (Math.max(resultado.mandante, resultado.visitante) >= alvo && diferenca >= 2) {
-            const vencedor = resultado.mandante > resultado.visitante ? 'mandante' : 'visitante';
-            if (vencedor === 'mandante') resultado.setsMandante++;
-            else resultado.setsVisitante++;
-            resultado.ultimoSet = { numero: resultado.setAtual, mandante: resultado.mandante,
-                visitante: resultado.visitante, vencedor };
-            if (resultado.setsMandante === 3 || resultado.setsVisitante === 3) {
-                resultado.encerrado = true;
-            } else {
-                resultado.setAtual++;
-                resultado.mandante = 0;
-                resultado.visitante = 0;
-            }
-        }
-    }
-    return resultado;
+    return calcularPlacar(jogo, atletas, jogadas);
 }
 
 // Reduz a foto para 128x128 (recorte quadrado) em JPEG: ~5 KB, cabe no localStorage
@@ -108,7 +70,10 @@ function processarFoto(arquivo) {
 function invalidarResultadoSalvo(idAlterado) {
     const salvos = ler(K_JOGOS);
     const atualizados = salvos.filter((x) => String(x.idJogo) !== String(idAlterado));
-    if (atualizados.length !== salvos.length) gravar(K_JOGOS, atualizados);
+    if (atualizados.length !== salvos.length) {
+        gravar(K_JOGOS, atualizados);
+        nuvemEnfileirar({ t: "jogo-del", id: Number(idAlterado) });
+    }
     const jogo = jogos.find((x) => String(x.idJogo) === String(idAlterado));
     if (jogo) { jogo.jogado = false; jogo.setsMandante = null; jogo.setsVisitante = null; }
 }
@@ -300,6 +265,7 @@ $("form-atleta").addEventListener("submit", (e) => {
     Object.assign(a, { nome, numero, posicao });
     if (fotoPendente !== undefined) a.foto = fotoPendente;
     gravar(K_ATLETAS, atletas);
+    nuvemEnfileirar({ t: "atleta", d: atletaParaLinha(a) });
     limparForm();
     renderizarTudo();
 });
@@ -329,6 +295,7 @@ $("lista-elenco").addEventListener("click", (e) => {
         atletas = atletas.filter((a) => a.id !== rem.dataset.remover);
         jogadas = jogadas.filter((j) => j.idAtleta !== rem.dataset.remover);
         gravar(K_ATLETAS, atletas); gravar(K_JOGADAS, jogadas);
+        nuvemEnfileirar({ t: "atleta-del", id: rem.dataset.remover });   // no banco, as jogadas dela caem junto
         if (editandoId === rem.dataset.remover) limparForm();
         renderizarTudo();
     }
@@ -407,6 +374,7 @@ $("resumo-jogo").addEventListener("click", (e) => {
         finalizadoEm: new Date().toISOString()
     });
     if (!gravar(K_JOGOS, salvos)) return;
+    nuvemEnfileirar({ t: "jogo", d: jogoParaLinha(salvos[salvos.length - 1]) });
     Object.assign(jogo, { setsMandante: placar.setsMandante, setsVisitante: placar.setsVisitante, jogado: true });
     renderizarTudo();
     alert("Partida finalizada! O resultado foi salvo e já conta na classificação deste navegador.");
@@ -420,8 +388,10 @@ $("cards").addEventListener("click", (e) => {
         alert("Esta partida já foi encerrada. Exclua uma jogada do histórico se precisar corrigir o placar.");
         return;
     }
-    jogadas.push({ id: novoId(), idJogo, idAtleta: stat.dataset.atleta, tipo: stat.dataset.tipo, ts: Date.now() });
+    const nova = { id: novoId(), idJogo, idAtleta: stat.dataset.atleta, tipo: stat.dataset.tipo, ts: Date.now() };
+    jogadas.push(nova);
     gravar(K_JOGADAS, jogadas);
+    nuvemEnfileirar({ t: "jogada", d: jogadaParaLinha(nova) });
     if (navigator.vibrate) navigator.vibrate(30);   // feedback no celular
     renderizarTudo();
 });
@@ -438,6 +408,7 @@ $("log").addEventListener("click", (e) => {
     if (!confirm(`Excluir somente a jogada de ${nome}? O placar e as estatísticas serão recalculados.`)) return;
     jogadas = jogadas.filter((j) => String(j.id) !== String(idRemover));
     gravar(K_JOGADAS, jogadas);
+    nuvemEnfileirar({ t: "jogada-del", id: String(idRemover) });
     invalidarResultadoSalvo(jogada.idJogo);
     renderizarTudo();
 });
@@ -446,8 +417,10 @@ $("btn-desfazer").addEventListener("click", () => {
     for (let i = jogadas.length - 1; i >= 0; i--) {
         if (jogadas[i].idJogo === idJogo) {
             const idJogoAlterado = jogadas[i].idJogo;
+            const idRemovida = jogadas[i].id;
             jogadas.splice(i, 1);
             gravar(K_JOGADAS, jogadas);
+            nuvemEnfileirar({ t: "jogada-del", id: String(idRemovida) });
             invalidarResultadoSalvo(idJogoAlterado);
             renderizarTudo();
             return;
@@ -481,11 +454,47 @@ $("arquivo-backup").addEventListener("change", (e) => {
             if (Array.isArray(d.jogos) && d.jogos.length) { gravar(K_JOGOS, d.jogos); jogos.splice(0, jogos.length, ...carregarJogos()); }
             limparForm();
             renderizarTudo();
+            nuvemEnviarTudo().then((r) => alert(r.erro
+                ? "Backup importado neste navegador, mas NÃO enviado ao banco: " + r.erro
+                : `Backup importado e enviado ao banco (${r.jogadas} jogadas, ${r.jogos} resultados).`));
         } catch (err) { alert("Arquivo de backup inválido."); }
     };
     leitor.readAsText(arquivo);
     e.target.value = "";
 });
 
+// ===== SINCRONIZAÇÃO COM O SUPABASE =====
+// Envia o que está na fila e depois baixa o banco, que é a fonte oficial dos dados.
+async function sincronizarDaNuvem() {
+    if (!nuvem || !(await nuvemUsuario())) return;
+    await nuvemProcessarFila();
+    if (nuvemPendentes() > 0) return;   // sobrou pendência (ex.: sem internet): não sobrescreve o que está só aqui
+
+    let dados = await nuvemBaixarTudo();
+    if (dados.erro) { nuvemUltimoErro = dados.erro; document.dispatchEvent(new CustomEvent("nuvem-status")); return; }
+
+    // Primeira vez neste navegador: se já há jogadas locais, pergunta antes de substituí-las
+    const resultadosLocais = ler(K_JOGOS).filter((j) => j.jogado).length;
+    if (!localStorage.getItem(K_NUVEM_OK) && (jogadas.length || resultadosLocais) &&
+        confirm(`Este navegador tem ${jogadas.length} jogada(s) e ${resultadosLocais} resultado(s) que ainda não estão no banco.\n\nOK = enviar ao banco\nCancelar = descartar e usar só o que já está no banco`)) {
+        const r = await nuvemEnviarTudo();
+        if (r.erro) { alert("Não foi possível enviar: " + r.erro); return; }
+        dados = await nuvemBaixarTudo();
+        if (dados.erro) return;
+    }
+    try { localStorage.setItem(K_NUVEM_OK, "1"); } catch (e) { /* ignora */ }
+
+    gravar(K_ATLETAS, dados.atletas);
+    atletas = ler(K_ATLETAS);
+    jogadas = dados.jogadas;
+    gravar(K_JOGADAS, jogadas);
+    gravar(K_JOGOS, dados.jogos);
+    jogos.splice(0, jogos.length, ...carregarJogos());
+    renderizarTudo();
+    document.dispatchEvent(new CustomEvent("nuvem-status"));
+}
+document.addEventListener("nuvem-sincronizar", sincronizarDaNuvem);
+
 // ===== INÍCIO =====
 trocarCategoria("F");
+sincronizarDaNuvem();

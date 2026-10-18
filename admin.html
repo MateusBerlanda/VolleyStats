@@ -10,8 +10,12 @@
     <link rel="icon" type="image/png" href="img/logo_reduzida.png">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/admin.css">
+    <!-- Biblioteca do Supabase (versão fixa) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.1/dist/umd/supabase.js" defer></script>
     <script src="js/teams.js" defer></script>
     <script src="js/atletas.js" defer></script>
+    <script src="js/supabase.js" defer></script>
+    <script src="js/placar.js" defer></script>
     <script src="js/admin.js" defer></script>
 </head>
 
@@ -27,6 +31,26 @@
     </header>
 
     <main>
+        <!-- 0) CONTA DE ADMINISTRADOR (Supabase) -->
+        <section class="nuvem">
+            <h2>Conta de administrador</h2>
+            <form id="nuvem-form" class="nuvem-form">
+                <div id="nuvem-deslogado" class="nuvem-linha">
+                    <input id="nuvem-email" class="campo" type="email" placeholder="E-mail" autocomplete="username" required>
+                    <input id="nuvem-senha" class="campo" type="password" placeholder="Senha" autocomplete="current-password" required>
+                    <button type="submit" class="btn-salvar">Entrar</button>
+                </div>
+            </form>
+            <div id="nuvem-logado" class="nuvem-linha" hidden>
+                <span>Conectado como <strong id="nuvem-usuario"></strong> · <span id="nuvem-total"></span></span>
+                <button id="btn-enviar-elenco" class="btn-salvar" type="button">Enviar elenco ao Supabase</button>
+                <button id="btn-nuvem-sync" class="btn-mini" type="button">Sincronizar agora</button>
+                <button id="btn-nuvem-sair" class="btn-mini" type="button">Sair</button>
+            </div>
+            <p id="nuvem-sync" class="nuvem-sync" role="status"></p>
+            <p id="nuvem-msg" class="nuvem-msg" role="status"></p>
+        </section>
+
         <!-- 1) MODALIDADE E JOGO -->
         <section>
             <div class="abas">

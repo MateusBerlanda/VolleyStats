@@ -102,18 +102,23 @@ function renderizarJogos() {
     $("rodada-anterior").disabled = indiceRodada <= 0;
     $("rodada-proxima").disabled = indiceRodada >= rodadas.length - 1;
 
+    const aoVivo = mapaAoVivo();   // partidas em andamento (ao-vivo.js)
     daCategoria.filter((j) => chaveRodada(j) === rodadaAtiva).forEach((jogo) => {
         const casa = doTime(jogo.idMandante);
         const fora = doTime(jogo.idVisitante);
         if (!casa || !fora) return;
 
-        const placar = jogo.jogado ? `${jogo.setsMandante} x ${jogo.setsVisitante}` : "vs";
+        const vivo = jogo.jogado ? null : aoVivo.get(jogo.idJogo);
+        const placar = jogo.jogado ? `${jogo.setsMandante} x ${jogo.setsVisitante}`
+            : vivo ? `${vivo.setsMandante} x ${vivo.setsVisitante}` : "vs";
+        const selo = vivo ? `<span class="selo-ao-vivo${vivo.encerrado ? " encerrado" : ""}">${vivo.encerrado ? "ENCERRADO" : "● AO VIVO"}</span><br>` : "";
+        const pontos = vivo && !vivo.encerrado ? `<small class="pontos-vivo">Set ${vivo.setAtual}: ${vivo.mandante} x ${vivo.visitante}</small>` : "";
         cards += `
             <article class="card-jogo">
-                <small>${esc(rotuloJogo(jogo))}</small>${jogo.local ? `<br><small>${esc(jogo.local)}</small>` : ""}
+                ${selo}<small>${esc(rotuloJogo(jogo))}</small>${jogo.local ? `<br><small>${esc(jogo.local)}</small>` : ""}
                 <div class="confronto">
                     <div>${imgTime(casa, "")}${esc(casa.nome)}</div>
-                    <div class="placar-jogo">${placar}</div>
+                    <div class="placar-jogo">${placar}${pontos}</div>
                     <div>${imgTime(fora, "")}${esc(fora.nome)}</div>
                 </div>
             </article>`;
@@ -216,4 +221,6 @@ $("rank-time").addEventListener("change", (e) => { timeFiltro = e.target.value; 
 carregarDadosPublicos().then(() => {
     carregarJogos();
     renderizarTudo();
+    // Placar ao vivo: cada mudança no banco redesenha a tela
+    iniciarAoVivo(() => { carregarJogos(); renderizarTudo(); });
 });

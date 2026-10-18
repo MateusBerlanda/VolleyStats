@@ -25,14 +25,18 @@ Feito com HTML, CSS e JavaScript puros (sem frameworks e sem backend).
 
 ## Como os dados são guardados
 
-- O **elenco-base** e o **calendário** ficam no código (`js/atletas.js` e `js/teams.js`).
-- As **jogadas**, os **resultados** e as **edições de atletas** ficam no `localStorage` do navegador onde o admin foi usado.
-- Para o site público mostrar os resultados, exporte o backup no admin (ele gera o arquivo `dados.json`) e suba esse arquivo na raiz do repositório, ao lado do `index.html`. O site lê o `dados.json` automaticamente.
+Os dados ficam no **Supabase** (banco de dados na nuvem), em 3 tabelas: `atletas`, `jogadas` e `jogos`.
+
+- O **calendário** e os **times** ficam no código (`js/teams.js`). O **elenco-base** também está no código (`js/atletas.js`) e foi enviado ao banco pelo botão "Enviar elenco ao Supabase" do admin.
+- **Admin:** cada toque, exclusão de jogada, partida finalizada ou edição de atleta aparece na hora na tela e entra numa fila local, que é enviada ao Supabase em seguida. Sem internet, a fila espera e é enviada quando a conexão volta. O painel mostra se está tudo sincronizado.
+- **Site público:** lê as 3 tabelas do Supabase ao abrir a página. Se o Supabase estiver fora do ar, usa o `dados.json` (exportado pelo admin) como plano B.
+- **Segurança:** todo mundo pode **ler** as tabelas, mas só o usuário administrador logado pode **gravar** (regras RLS do Supabase). O cadastro de novos usuários está desligado. A chave publishable que está em `js/supabase.js` é pública por natureza. A chave **secret** nunca vai para o código.
 
 ## Limitações
 
-- Os dados lançados no celular **não aparecem sozinhos** para quem visita o site. Só aparecem depois que o `dados.json` é publicado. Não existe placar ao vivo para o público.
-- Não há login: o `admin.html` é uma página comum, apenas com `noindex`. Qualquer pessoa que souber o endereço consegue abri-la, mas o que ela lançar fica só no navegador dela.
+- O site público ainda **não atualiza sozinho**: quem está com a página aberta vê os dados do momento em que abriu e precisa recarregar. O placar ao vivo é a próxima etapa.
+- O site baixa **todas** as jogadas para montar o ranking. Com poucos jogos isso é rápido, mas com a temporada inteira o ideal é o banco calcular os totais (uma "view" no Supabase).
+- O `admin.html` é uma página comum, só com `noindex`. Qualquer pessoa que souber o endereço consegue abri-la, mas sem o login do administrador o banco recusa qualquer gravação.
 - O elenco **não está completo**: o feminino está cadastrado para os 12 times, mas o masculino está incompleto. Números de camisa não confirmados aparecem como "—". Confira tudo nas fichas oficiais de cada clube e da CBV antes de usar em partidas reais.
 - Não existe integração com dados oficiais da CBV.
 
@@ -58,6 +62,8 @@ Evite abrir o arquivo direto pelo disco (`file://`), porque o navegador bloqueia
 - `css/admin.css`: estilos específicos do painel.
 - `js/teams.js`: times e calendário completo da temporada.
 - `js/atletas.js`: elencos, tipos de estatística, posições e funções compartilhadas (leitura/gravação, totais, rodadas).
+- `js/supabase.js`: conexão com o Supabase (login, fila de envio, leitura paginada).
+- `js/dados-publicos.js`: faz o site público ler do Supabase (com o `dados.json` como plano B).
 - `js/app.js`: lógica do site público.
 - `js/admin.js`: lógica do painel.
 - `img/`: logos dos times e do site.
@@ -65,8 +71,8 @@ Evite abrir o arquivo direto pelo disco (`file://`), porque o navegador bloqueia
 ## Próximas etapas
 
 1. Completar o elenco masculino e os números de camisa.
-2. Para o público ver o placar ao vivo: guardar os dados num banco (Supabase) em vez do `localStorage`.
-3. Proteger o painel com login de administrador.
+2. Placar ao vivo: o site público receber cada jogada na hora (Supabase Realtime, já ativado nas tabelas).
+3. Calcular os totais do ranking no próprio banco (view), para o site carregar menos dados.
 4. Importar dados oficiais, somente se a fonte for autorizada, ou usar importação manual com revisão.
 5. Testes e revisão de acessibilidade.
 

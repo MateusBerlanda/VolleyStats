@@ -1,0 +1,38 @@
+/* Selo e detalhes do placar ao vivo nos cards de jogo (site público) */
+.selo-ao-vivo {
+    display: inline-block;
+    margin-bottom: 6px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: var(--vermelho);
+    color: white;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+}
+
+.selo-ao-vivo.encerrado {
+    background: var(--azul-medio);
+}
+
+.pontos-vivo {
+    display: block;
+    margin-top: 2px;
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--vermelho);
+}
+
+@keyframes pulsar {
+    50% { opacity: .55; }
+}
+
+.selo-ao-vivo:not(.encerrado) {
+    animation: pulsar 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .selo-ao-vivo:not(.encerrado) {
+        animation: none;
+    }
+}

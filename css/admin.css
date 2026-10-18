@@ -549,3 +549,43 @@ main section {
 }
 /* O formulário de edição só aparece quando uma atleta é selecionada. */
 .form-atleta[hidden] { display: none !important; }
+
+
+/* Painel "Conta de administrador" (Supabase) */
+.nuvem-linha {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.nuvem-linha .campo {
+    flex: 1 1 180px;
+}
+
+.nuvem-linha[hidden] {
+    display: none;
+}
+
+.nuvem-msg {
+    margin-top: 8px;
+    font-size: .9rem;
+    color: var(--vermelho);
+}
+
+.nuvem-msg.ok {
+    color: var(--ok);
+}
+
+.nuvem-sync {
+    margin-top: 8px;
+    font-size: .9rem;
+}
+
+.nuvem-sync.ok {
+    color: var(--ok);
+}
+
+.nuvem-sync.pend {
+    color: var(--vermelho);
+}
