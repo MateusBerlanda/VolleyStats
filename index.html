@@ -10,15 +10,6 @@
     <link rel="icon" type="image/png" href="img/logo_reduzida.png">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/ao-vivo.css">
-    <!-- Biblioteca do Supabase (versão fixa) -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.1/dist/umd/supabase.js" defer></script>
-    <script src="js/teams.js" defer></script>
-    <script src="js/atletas.js" defer></script>
-    <script src="js/supabase.js" defer></script>
-    <script src="js/dados-publicos.js" defer></script>
-    <script src="js/placar.js" defer></script>
-    <script src="js/ao-vivo.js" defer></script>
-    <script src="js/app.js" defer></script>
 </head>
 
 <body>
@@ -58,7 +49,8 @@
         <section id="jogos" class="jogos-section">
             <div class="rodada-carrossel" aria-label="Navegação entre rodadas">
                 <button type="button" id="rodada-anterior" class="seta-rodada" aria-label="Rodada anterior">‹</button>
-                <div class="rodada-titulo-wrap"><span class="rodada-legenda">CALENDÁRIO</span><strong id="rodada-titulo">Turno · Rodada 1</strong></div>
+                <div class="rodada-titulo-wrap"><span class="rodada-legenda">CALENDÁRIO</span><strong
+                        id="rodada-titulo">Turno · Rodada 1</strong></div>
                 <button type="button" id="rodada-proxima" class="seta-rodada" aria-label="Próxima rodada">›</button>
             </div>
             <label for="filtro-rodada" class="sr-only">Rodada selecionada</label>
@@ -100,6 +92,15 @@
     <footer>
         <p>VolleyStats © 2026</p>
     </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.1/dist/umd/supabase.js" defer></script>
+    <script src="js/teams.js" defer></script>
+    <script src="js/atletas.js" defer></script>
+    <script src="js/supabase.js" defer></script>
+    <script src="js/dados-publicos.js" defer></script>
+    <script src="js/placar.js" defer></script>
+    <script src="js/ao-vivo.js" defer></script>
+    <script src="js/app.js" defer></script>
 </body>
 
 </html>

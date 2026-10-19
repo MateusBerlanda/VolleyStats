@@ -243,7 +243,7 @@ main section {
 .placar-painel {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: stretch;
+    align-items: center;
     gap: 10px;
     padding: 14px;
     border: 1px solid var(--borda);
@@ -547,8 +547,11 @@ main section {
     outline: 3px solid #83d8aa;
     outline-offset: 3px;
 }
+
 /* O formulário de edição só aparece quando uma atleta é selecionada. */
-.form-atleta[hidden] { display: none !important; }
+.form-atleta[hidden] {
+    display: none !important;
+}
 
 
 /* Painel "Conta de administrador" (Supabase) */
@@ -588,4 +591,31 @@ main section {
 
 .nuvem-sync.pend {
     color: var(--vermelho);
+}
+
+/* Ações coletivas de erro por equipe */
+.erros-time-botoes {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.btn-erro-time {
+    border: 1px solid #c94b4b;
+    background: #fff1f1;
+    color: #9f2525;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.btn-erro-time:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+#btn-excluir-todas-jogadas {
+    margin-top: 8px;
 }

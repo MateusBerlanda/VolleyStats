@@ -24,7 +24,7 @@ function calcularPlacar(jogo, atletas, jogadas) {
         const stat = STATS.find((s) => s.chave === x.tipo);
         let ladoPonto = null;
         if (stat?.tipo === 'ponto') ladoPonto = ladoAtleta;
-        else if (x.tipo === 'erro') ladoPonto = ladoAtleta === 'mandante' ? 'visitante' : 'mandante';
+        else if (x.tipo === 'erro' || x.tipo === 'erro_time') ladoPonto = ladoAtleta === 'mandante' ? 'visitante' : 'mandante';
         if (!ladoPonto) continue;
 
         resultado[ladoPonto]++;

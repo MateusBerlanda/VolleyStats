@@ -128,8 +128,13 @@ function renderizarResumo() {
                 <small>${errosCasa} erro(s) do adversário</small>
                 <span class="sets-time">${placar.setsVisitante} set(s)</span>
             </div>
+            <div class="erros-time-botoes">
+                <button type="button" class="btn-erro-time" data-erro-time="mandante" ${placar.encerrado ? "disabled" : ""}>Erro — ${esc(casa ? casa.nome : "Mandante")}</button>
+                <button type="button" class="btn-erro-time" data-erro-time="visitante" ${placar.encerrado ? "disabled" : ""}>Erro — ${esc(fora ? fora.nome : "Visitante")}</button>
+            </div>
             ${notaFinal}
         </div>`;
+
     $("btn-casa").textContent = casa ? casa.nome : "Casa";
     $("btn-fora").textContent = fora ? fora.nome : "Fora";
 }
@@ -163,14 +168,16 @@ function renderizarLog() {
     $("log").innerHTML = recentes.map((j) => {
         const a = atletas.find((x) => String(x.id) === String(j.idAtleta));
         const s = STATS.find((x) => x.chave === j.tipo);
+        const erroTime = j.tipo === "erro_time";
         const hora = new Date(j.ts).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
         const jogo = jogoAtual();
         const timeAtleta = a && jogo ? (String(a.idTime) === String(jogo.idMandante) ? "mandante" : String(a.idTime) === String(jogo.idVisitante) ? "visitante" : "") : "";
-        const pontoPara = j.tipo === "erro" ? (timeAtleta === "mandante" ? "visitante" : timeAtleta === "visitante" ? "mandante" : "") : timeAtleta;
+        const ladoErroEfetivo = j.tipo === "erro_time" ? (j.ladoErro || timeAtleta) : timeAtleta;
+        const pontoPara = (j.tipo === "erro" || j.tipo === "erro_time") ? (ladoErroEfetivo === "mandante" ? "visitante" : ladoErroEfetivo === "visitante" ? "mandante" : "") : timeAtleta;
         const timeQuePontua = pontoPara === "mandante" ? (timesDaCategoria().find(t => String(t.id) === String(jogo?.idMandante)) || {}).nome
             : pontoPara === "visitante" ? (timesDaCategoria().find(t => String(t.id) === String(jogo?.idVisitante)) || {}).nome : "";
         return `<li class="jogada-item ${j.tipo === "erro" ? "jogada-erro" : ""}">
-            <div class="jogada-detalhe"><span class="jogada-hora">${hora}</span><span class="jogada-descricao">${a ? "#" + (a.numero == null ? "—" : a.numero) + " " + esc(a.nome) : "Atleta desconhecida"} · ${s ? s.rotulo : esc(j.tipo)}</span>
+            <div class="jogada-detalhe"><span class="jogada-hora">${hora}</span><span class="jogada-descricao">${erroTime ? "Erro coletivo do " + esc((timesDaCategoria().find(t => String(t.id) === String((j.ladoErro || timeAtleta) === "mandante" ? jogo?.idMandante : jogo?.idVisitante)) || {}).nome || "time") : a ? "#" + (a.numero == null ? "—" : a.numero) + " " + esc(a.nome) : "Atleta desconhecida"} · ${erroTime ? "Erro do time" : s ? s.rotulo : esc(j.tipo)}</span>
             ${timeQuePontua ? `<small class="jogada-ponto">${j.tipo === "erro" ? "Ponto para " : "Ponto para "}${esc(timeQuePontua)}</small>` : ""}</div>
             <button type="button" class="btn-excluir-jogada" data-remover-jogada="${esc(j.id)}" aria-label="Excluir esta jogada" title="Excluir esta jogada">×</button>
         </li>`;
@@ -396,6 +403,26 @@ $("cards").addEventListener("click", (e) => {
     renderizarTudo();
 });
 
+// Erro coletivo: registra um ponto para o adversário sem atribuir erro individual.
+$("resumo-jogo").addEventListener("click", (e) => {
+    const botao = e.target.closest("[data-erro-time]");
+    if (!botao) return;
+    const jogo = jogoAtual();
+    if (!jogo || calcularPlacarPontos(jogo).encerrado) return;
+    const ladoErro = botao.dataset.erroTime;
+    const idTime = ladoErro === "mandante" ? jogo.idMandante : jogo.idVisitante;
+    const atletaTime = elencoDe(idTime)[0];
+    if (!atletaTime) {
+        alert("Esse time não tem atletas cadastradas. Cadastre ao menos uma atleta para registrar o erro coletivo.");
+        return;
+    }
+    const nova = { id: novoId(), idJogo, idAtleta: atletaTime.id, tipo: "erro_time", ladoErro, ts: Date.now() };
+    jogadas.push(nova);
+    gravar(K_JOGADAS, jogadas);
+    nuvemEnfileirar({ t: "jogada", d: jogadaParaLinha(nova) });
+    renderizarTudo();
+});
+
 // Exclui apenas a jogada escolhida no histórico, sem alterar as demais.
 $("log").addEventListener("click", (e) => {
     const botao = e.target.closest("[data-remover-jogada]");
@@ -426,6 +453,19 @@ $("btn-desfazer").addEventListener("click", () => {
             return;
         }
     }
+});
+
+// Exclui todas as jogadas da partida selecionada.
+$("btn-excluir-todas-jogadas").addEventListener("click", () => {
+    const daPartida = jogadas.filter((j) => String(j.idJogo) === String(idJogo));
+    if (!daPartida.length) { alert("Não há jogadas para excluir nesta partida."); return; }
+    if (!confirm(`Excluir TODAS as ${daPartida.length} jogada(s) desta partida? O placar e as estatísticas serão recalculados.`)) return;
+    const ids = new Set(daPartida.map((j) => String(j.id)));
+    jogadas = jogadas.filter((j) => !ids.has(String(j.id)));
+    gravar(K_JOGADAS, jogadas);
+    daPartida.forEach((j) => nuvemEnfileirar({ t: "jogada-del", id: String(j.id) }));
+    invalidarResultadoSalvo(idJogo);
+    renderizarTudo();
 });
 
 // ===== BACKUP =====
