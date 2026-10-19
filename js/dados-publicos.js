@@ -14,9 +14,18 @@ ler = function (chave) {
     if (!FONTE_REMOTA) return lerDoNavegador(chave);
     const remoto = DADOS_PUBLICOS[chave] || [];
     if (chave !== K_ATLETAS) return remoto;
-    // Atletas: elenco-base do código, com os dados do banco por cima (o banco manda)
+    // Atletas: o banco manda (nome, número, posição e foto dele valem), mas se o banco
+    // estiver com um campo vazio (NULL), o elenco-base do código completa a lacuna.
     const porId = new Map(ATLETAS_BASE.map((a) => [a.id, { ...a }]));
-    remoto.forEach((a) => porId.set(a.id, { ...porId.get(a.id), ...a }));
+    remoto.forEach((a) => {
+        const base = porId.get(a.id) || {};
+        porId.set(a.id, {
+            ...base, ...a,
+            numero: a.numero ?? base.numero ?? null,
+            posicao: a.posicao || base.posicao || "",
+            foto: a.foto || base.foto || ""
+        });
+    });
     return [...porId.values()];
 };
 
