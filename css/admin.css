@@ -470,7 +470,7 @@ main section {
     margin-top: 8px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 900px) {
     .rodada-carrossel {
         width: 100%;
     }

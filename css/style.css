@@ -106,7 +106,7 @@ html {
 
 /* ===== AJUSTES PARA CELULARES ===== */
 
-@media (max-width: 700px) {
+@media (max-width: 900px) {
     .site-header {
         flex-direction: column;
         justify-content: center;

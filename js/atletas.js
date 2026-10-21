@@ -212,7 +212,7 @@ const ELENCOS_SUPERLIGA = {
             { id: "F-9-andressa-gelenski", categoria: "F", idTime: 9, nome: 'Andressa Gelenski', numero: 11, posicao: "central", foto: "Fotos-Atletas/pinheiros/andressa.webp" },
             { id: "F-9-luana-kuskowski", categoria: "F", idTime: 9, nome: 'Luana Kuskowski', numero: 20, posicao: "central", foto: "Fotos-Atletas/pinheiros/luana.webp" },
             { id: "F-9-adria-da-silva", categoria: "F", idTime: 9, nome: 'Adria da Silva', numero: 1, posicao: "central", foto: "Fotos-Atletas/pinheiros/adria.webp" },
-            { id: "F-9-mariana-medeiros", categoria: "F", idTime: 9, nome: 'Mariana Medeiros', numero: null, posicao: "central", foto: "Fotos-Atletas/pinheiros/mari.webp" },
+            { id: "F-9-mariana-medeiros", categoria: "F", idTime: 9, nome: 'Mariana Medeiros', numero: 13, posicao: "central", foto: "Fotos-Atletas/pinheiros/mari.webp" },
             { id: "F-9-gabriela-valenga", categoria: "F", idTime: 9, nome: 'Gabriela Valenga', numero: 17, posicao: "libero", foto: "Fotos-Atletas/pinheiros/bibi.webp" },
             { id: "F-9-audren-mendonca", categoria: "F", idTime: 9, nome: 'Audren Rose', numero: 12, posicao: "libero", foto: "Fotos-Atletas/pinheiros/audren.webp" },
             { id: "F-9-paola-villegas", categoria: "F", idTime: 9, nome: 'Paola Villegas', numero: 6, posicao: "libero", foto: "Fotos-Atletas/pinheiros/villegas.webp" }
