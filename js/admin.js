@@ -35,7 +35,9 @@ const contar = (idAtleta, tipo, jogo) =>
     jogadas.filter((j) => j.idAtleta === idAtleta && j.tipo === tipo && (jogo == null || j.idJogo === jogo)).length;
 const tiposDePonto = STATS.filter((s) => s.tipo === "ponto").map((s) => s.chave);
 const pontos = (idAtleta, jogo) => tiposDePonto.reduce((soma, tipo) => soma + contar(idAtleta, tipo, jogo), 0);
-const erros = (idAtleta, jogo) => contar(idAtleta, "erro", jogo);
+// Erros do TIME no jogo (botão "Erro do time"): a jogada "erro_time" fica ligada a uma atleta do time que errou
+const errosDoTime = (idTime, jogo) => jogadas.filter((j) => j.tipo === "erro_time" && String(j.idJogo) === String(jogo) &&
+    String((atletas.find((a) => String(a.id) === String(j.idAtleta)) || {}).idTime) === String(idTime)).length;
 
 // Placar por sets, reconstruído a partir do histórico para continuar correto
 // quando uma jogada é excluída. Sets 1–4 vão a 25; o 5º vai a 15, sempre
@@ -102,35 +104,36 @@ function renderizarResumo() {
     const casa = times.find((t) => String(t.id) === String(j.idMandante));
     const fora = times.find((t) => String(t.id) === String(j.idVisitante));
     const placar = calcularPlacarPontos(j);
-    const errosCasa = elencoDe(j.idMandante).reduce((s, a) => s + erros(a.id, idJogo), 0);
-    const errosFora = elencoDe(j.idVisitante).reduce((s, a) => s + erros(a.id, idJogo), 0);
+    const errosCasa = errosDoTime(j.idMandante, idJogo);
+    const errosFora = errosDoTime(j.idVisitante, idJogo);
     const estadoSet = placar.encerrado ? "Partida encerrada" : `Set ${placar.setAtual}`;
-    const setsResumo = `Sets: ${placar.setsMandante} – ${placar.setsVisitante}`;
+    // Parciais dos sets já terminados, ex.: 25x22 (mandante primeiro)
+    const parciais = placar.sets.map((s) => `<small class="parcial" title="Set ${s.numero}">${s.mandante}x${s.visitante}</small>`).join("");
     const notaFinal = j.jogado
-        ? `<small class="partida-encerrada">Partida finalizada e contabilizada · ${setsResumo}</small>`
+        ? `<small class="partida-encerrada">Partida finalizada e contabilizada</small>`
         : placar.encerrado
-            ? `<small class="partida-encerrada">Fim de jogo · ${setsResumo}</small><button type="button" id="btn-finalizar-partida" class="btn-finalizar-partida">Finalizar partida e atualizar classificação</button>`
-            : `<small class="sets-resumo">${setsResumo}</small>`;
+            ? `<small class="partida-encerrada">Fim de jogo</small><button type="button" id="btn-finalizar-partida" class="btn-finalizar-partida">Finalizar partida e atualizar classificação</button>`
+            : "";
     $("resumo-jogo").innerHTML = `
         <div class="placar-painel" role="status" aria-live="polite">
             <div class="placar-time casa">
                 <span class="placar-selo">CASA</span>
                 <strong class="placar-nome">${esc(casa ? casa.nome : "Mandante")}</strong>
                 <span class="placar-pontos">${placar.mandante}</span>
-                <small>${errosFora} erro(s) do adversário</small>
-                <span class="sets-time">${placar.setsMandante} set(s)</span>
+                <small>${errosCasa} erro(s) do time</small>
+                <button type="button" class="btn-erro-time" data-erro-time="mandante" ${placar.encerrado ? "disabled" : ""}>Erro do time</button>
             </div>
-            <div class="placar-centro"><span>${esc(estadoSet.toUpperCase())}</span><b>×</b><small>${setsResumo}</small></div>
+            <div class="placar-centro">
+                <span>${esc(estadoSet.toUpperCase())}</span>
+                <b class="sets-grande" title="Sets ganhos">${placar.setsMandante}x${placar.setsVisitante}</b>
+                ${parciais ? `<div class="parciais">${parciais}</div>` : ""}
+            </div>
             <div class="placar-time fora">
                 <span class="placar-selo">FORA</span>
                 <strong class="placar-nome">${esc(fora ? fora.nome : "Visitante")}</strong>
                 <span class="placar-pontos">${placar.visitante}</span>
-                <small>${errosCasa} erro(s) do adversário</small>
-                <span class="sets-time">${placar.setsVisitante} set(s)</span>
-            </div>
-            <div class="erros-time-botoes">
-                <button type="button" class="btn-erro-time" data-erro-time="mandante" ${placar.encerrado ? "disabled" : ""}>Erro — ${esc(casa ? casa.nome : "Mandante")}</button>
-                <button type="button" class="btn-erro-time" data-erro-time="visitante" ${placar.encerrado ? "disabled" : ""}>Erro — ${esc(fora ? fora.nome : "Visitante")}</button>
+                <small>${errosFora} erro(s) do time</small>
+                <button type="button" class="btn-erro-time" data-erro-time="visitante" ${placar.encerrado ? "disabled" : ""}>Erro do time</button>
             </div>
             ${notaFinal}
         </div>`;
@@ -148,15 +151,15 @@ function renderizarCards() {
             <div class="atleta-topo">
                 <img class="foto-mini" src="${esc(fotoDe(a))}" alt="">
                 <div class="info">
-                    <strong> #${a.numero == null ? "—" : a.numero} ${esc(a.nome)}</strong>
-                    <small>${esc(rotuloPosicao(a.posicao, categoria))}</small>
+                    <strong>${esc(a.nome)}</strong>
+                    <small><span class="camisa">${a.numero == null ? "—" : "#" + a.numero}</span>${esc(rotuloPosicao(a.posicao, categoria))}</small>
                 </div>
-                <span class="pts">${pontos(a.id, idJogo)} pts<br>${erros(a.id, idJogo)} erros</span>
+                <div class="pts-badge" title="Pontos neste jogo"><b>${pontos(a.id, idJogo)}</b><span>pts</span></div>
             </div>
             <div class="botoes-stat">
                 ${STATS.map((s) => `
-                    <button class="btn-stat ${s.tipo}" data-atleta="${a.id}" data-tipo="${s.chave}" ${partidaEncerrada ? "disabled title=\"Partida encerrada\"" : ""}>
-                        + ${s.rotulo}<small>${contar(a.id, s.chave, idJogo)}</small>
+                    <button class="btn-stat stat-${s.chave} ${s.tipo}" data-atleta="${a.id}" data-tipo="${s.chave}" ${partidaEncerrada ? "disabled title=\"Partida encerrada\"" : ""}>
+                        <span class="stat-rotulo">+ ${s.rotulo}</span><small>${contar(a.id, s.chave, idJogo)}</small>
                     </button>`).join("")}
             </div>
         </div>`).join("")
@@ -205,7 +208,7 @@ function renderizarTabelaTemporada() {
     const totais = totaisDosAtletas(lista, jogadas);
     const linhas = lista
         .map((a) => ({ a, t: totais.get(a.id) }))
-        .sort((x, y) => y.t.pontos - x.t.pontos || x.t.erro - y.t.erro)
+        .sort((x, y) => y.t.pontos - x.t.pontos)
         .map(({ a, t }) => `
             <tr>
                 <td class="nome"><span class="time"><img class="foto-mini" src="${esc(fotoDe(a))}" alt="">
@@ -213,11 +216,10 @@ function renderizarTabelaTemporada() {
                 <td class="nome">${esc((times.find((x) => x.id === a.idTime) || {}).nome || "?")}</td>
                 ${tiposDePonto.map((k) => `<td>${t[k]}</td>`).join("")}
                 <td><strong>${t.pontos}</strong></td>
-                <td>${t.erro}</td>
             </tr>`).join("");
     const cab = STATS.filter((s) => s.tipo === "ponto").map((s) => `<th>${s.rotulo}</th>`).join("");
     $("tabela").innerHTML = linhas
-        ? `<table class="tabela-stats"><thead><tr><th>Atleta</th><th>Time</th>${cab}<th>Pts</th><th>Erros</th></tr></thead>
+        ? `<table class="tabela-stats"><thead><tr><th>Atleta</th><th>Time</th>${cab}<th>Pts</th></tr></thead>
         <tbody>${linhas}</tbody></table>`
         : "<p>Cadastre atletas para ver os totais.</p>";
 }
@@ -233,6 +235,7 @@ function renderizarOpcoes() {
 function renderizarTudo() {
     renderizarSeletorJogo(); renderizarResumo(); renderizarCards();
     renderizarLog(); renderizarListaElenco(); renderizarTabelaTemporada();
+    renderizarPosJogo(false);
 }
 
 // ===== FORMULÁRIO DE ATLETA =====
@@ -468,6 +471,210 @@ $("btn-excluir-todas-jogadas").addEventListener("click", () => {
     renderizarTudo();
 });
 
+// ===== LANÇAR PELO RESULTADO FINAL (jogo que não deu para acompanhar) =====
+// Você informa as parciais dos sets e os pontos de cada atleta (match report). O sistema monta as
+// jogadas sozinho, na ordem certa: o que sobrar de pontos de cada time entra como erro do adversário.
+// Assim placar, sets, parciais, ranking e site público funcionam igual a um jogo lançado ao vivo.
+let posJogoChave = null;   // jogo que está montado no formulário (evita apagar o que foi digitado)
+
+const embaralharComSemente = (lista, semente) => {
+    let s = Number(semente) || 1;
+    const aleatorio = () => { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; };
+    const r = lista.slice();
+    for (let i = r.length - 1; i > 0; i--) { const k = Math.floor(aleatorio() * (i + 1));[r[i], r[k]] = [r[k], r[i]]; }
+    return r;
+};
+
+function renderizarPosJogo(forcar) {
+    const detalhes = $("pos-jogo");
+    const jogo = jogoAtual();
+    $("pos-jogo-secao").hidden = !jogo;
+    if (!jogo || !detalhes.open) return;
+    const chave = String(jogo.idJogo);
+    if (!forcar && posJogoChave === chave) return;
+    posJogoChave = chave;
+
+    const times = timesDaCategoria();
+    const casa = times.find((t) => String(t.id) === String(jogo.idMandante));
+    const fora = times.find((t) => String(t.id) === String(jogo.idVisitante));
+    const sets = calcularPlacarPontos(jogo).sets;
+    const linhaSet = (i) => {
+        const s = sets[i - 1];
+        return `<div class="pos-set"><strong>Set ${i}${i === 5 ? " (vai a 15)" : ""}</strong>
+            <input class="campo num" type="number" min="0" inputmode="numeric" data-parcial="${i}-m" value="${s ? s.mandante : ""}" aria-label="Set ${i} ${esc(casa?.nome || "mandante")}">
+            <span>×</span>
+            <input class="campo num" type="number" min="0" inputmode="numeric" data-parcial="${i}-v" value="${s ? s.visitante : ""}" aria-label="Set ${i} ${esc(fora?.nome || "visitante")}"></div>`;
+    };
+    const tabelaTime = (time, idTime) => `
+        <h3 class="subtitulo">${esc(time?.nome || "Time")}</h3>
+        <div class="tabela-wrap"><table class="tabela-pos">
+            <thead><tr><th>Atleta</th>${STATS.map((s) => `<th>${esc(s.rotulo)}</th>`).join("")}</tr></thead>
+            <tbody>${elencoDe(idTime).map((a) => `<tr><td>#${a.numero == null ? "—" : a.numero} ${esc(a.nome)}</td>
+                ${STATS.map((s) => { const n = contar(a.id, s.chave, jogo.idJogo); return `<td><input class="campo num" type="number" min="0" inputmode="numeric" data-atleta="${esc(a.id)}" data-tipo="${s.chave}" value="${n || ""}"></td>`; }).join("")}</tr>`).join("")}
+            </tbody></table></div>`;
+
+    $("pos-jogo-corpo").innerHTML = `
+        <p class="dica">Digite as parciais dos sets (mandante × visitante) e os pontos de cada atleta conforme o match report.
+        Os pontos que sobrarem em cada time entram como erros do adversário. Ao salvar, as jogadas atuais deste jogo são substituídas.</p>
+        <h3 class="subtitulo">Parciais · ${esc(casa?.nome || "Mandante")} × ${esc(fora?.nome || "Visitante")}</h3>
+        <div class="pos-sets">${[1, 2, 3, 4, 5].map(linhaSet).join("")}</div>
+        ${tabelaTime(casa, jogo.idMandante)}${tabelaTime(fora, jogo.idVisitante)}
+        <p id="pos-resumo" class="pos-resumo" role="status"></p>
+        <button type="button" id="btn-salvar-pos-jogo" class="btn-salvar">Salvar jogo e atualizar classificação</button>`;
+    atualizarResumoPosJogo();
+}
+
+// Lê e valida o formulário. Devolve { erro } ou os dados prontos para gerar as jogadas.
+function lerPosJogo() {
+    const jogo = jogoAtual();
+    const corpo = $("pos-jogo-corpo");
+    const valor = (el) => (el && el.value !== "" ? Number(el.value) : null);
+    const parciais = [];
+    const sets = { m: 0, v: 0 };
+    let achouVazio = false;
+    for (let i = 1; i <= 5; i++) {
+        const m = valor(corpo.querySelector(`[data-parcial="${i}-m"]`));
+        const v = valor(corpo.querySelector(`[data-parcial="${i}-v"]`));
+        if (m === null && v === null) { achouVazio = true; continue; }
+        if (achouVazio) return { erro: `Preencha os sets em ordem: o set ${i} está preenchido, mas há um set vazio antes dele.` };
+        if (m === null || v === null || !Number.isInteger(m) || !Number.isInteger(v) || m < 0 || v < 0)
+            return { erro: `Set ${i}: preencha os dois placares com números inteiros.` };
+        if (sets.m === 3 || sets.v === 3) return { erro: `Set ${i}: o jogo já tinha terminado (uma equipe já tinha 3 sets).` };
+        const alvo = i === 5 ? 15 : 25, maior = Math.max(m, v), dif = Math.abs(m - v);
+        if (maior < alvo || dif < 2 || (maior > alvo && dif !== 2))
+            return { erro: `Set ${i} (${m}x${v}) não é um placar válido: o set vai a ${alvo} pontos, com 2 de diferença.` };
+        parciais.push({ numero: i, mandante: m, visitante: v, vencedor: m > v ? "mandante" : "visitante" });
+        if (m > v) sets.m++; else sets.v++;
+    }
+    if (!parciais.length) return { vazio: true };
+    if (sets.m !== 3 && sets.v !== 3) return { erro: "O jogo precisa ter um vencedor: uma equipe tem de chegar a 3 sets." };
+
+    const pontosTime = { m: 0, v: 0 };
+    parciais.forEach((p) => { pontosTime.m += p.mandante; pontosTime.v += p.visitante; });
+    const contagens = [];
+    const pontosAtletas = { m: 0, v: 0 };
+    for (const el of corpo.querySelectorAll("[data-atleta]")) {
+        const n = valor(el);
+        if (n === null || n === 0) continue;
+        if (!Number.isInteger(n) || n < 0) return { erro: "Os pontos das atletas precisam ser números inteiros, sem negativos." };
+        const a = atletas.find((x) => String(x.id) === String(el.dataset.atleta));
+        if (!a) continue;
+        contagens.push({ idAtleta: a.id, tipo: el.dataset.tipo, n });
+        if (tiposDePonto.includes(el.dataset.tipo)) pontosAtletas[String(a.idTime) === String(jogo.idMandante) ? "m" : "v"] += n;
+    }
+    // Pontos do time = pontos das atletas + erros do adversário
+    const errosVisitante = pontosTime.m - pontosAtletas.m;   // erros do visitante que deram ponto ao mandante
+    const errosMandante = pontosTime.v - pontosAtletas.v;
+    return { parciais, sets, pontosTime, pontosAtletas, errosMandante, errosVisitante, contagens };
+}
+
+function atualizarResumoPosJogo() {
+    const el = $("pos-resumo");
+    if (!el) return;
+    const jogo = jogoAtual();
+    const times = timesDaCategoria();
+    const nome = (id) => (times.find((t) => String(t.id) === String(id)) || {}).nome || "Time";
+    const d = lerPosJogo();
+    el.classList.remove("pos-erro");
+    if (d.vazio) { el.textContent = "Informe as parciais dos sets para conferir o resultado."; return; }
+    if (d.erro) { el.textContent = d.erro; el.classList.add("pos-erro"); return; }
+    const linha = (idTime, pts, atl, err, doAdversario) =>
+        `${nome(idTime)}: ${pts} pontos = ${atl} das atletas + ${err} erro(s) do ${nome(doAdversario)}`;
+    const msg = `${nome(jogo.idMandante)} ${d.sets.m} × ${d.sets.v} ${nome(jogo.idVisitante)}. ` +
+        linha(jogo.idMandante, d.pontosTime.m, d.pontosAtletas.m, d.errosVisitante, jogo.idVisitante) + ". " +
+        linha(jogo.idVisitante, d.pontosTime.v, d.pontosAtletas.v, d.errosMandante, jogo.idMandante) + ".";
+    if (d.errosVisitante < 0 || d.errosMandante < 0) {
+        const quem = d.errosVisitante < 0 ? nome(jogo.idMandante) : nome(jogo.idVisitante);
+        el.textContent = `${msg} Os pontos das atletas do ${quem} passam dos pontos do time nas parciais: confira os números.`;
+        el.classList.add("pos-erro");
+        return;
+    }
+    el.textContent = msg;
+}
+
+// Monta as jogadas na ordem certa para o placar reproduzir exatamente as parciais informadas.
+function gerarJogadasPosJogo(jogo, d) {
+    const elencoM = elencoDe(jogo.idMandante), elencoV = elencoDe(jogo.idVisitante);
+    const montarPool = (lado) => {
+        const idTime = lado === "m" ? jogo.idMandante : jogo.idVisitante;
+        const adversario = lado === "m" ? elencoV : elencoM;
+        const ladoAdversario = lado === "m" ? "visitante" : "mandante";
+        const erros = lado === "m" ? d.errosVisitante : d.errosMandante;
+        const pool = [];
+        d.contagens
+            .filter((c) => tiposDePonto.includes(c.tipo) && String((atletas.find((a) => String(a.id) === String(c.idAtleta)) || {}).idTime) === String(idTime))
+            .forEach((c) => { for (let i = 0; i < c.n; i++) pool.push({ idAtleta: c.idAtleta, tipo: c.tipo }); });
+        for (let i = 0; i < erros; i++) pool.push({ idAtleta: adversario[0].id, tipo: "erro_time", ladoErro: ladoAdversario });
+        return embaralharComSemente(pool, Number(jogo.idJogo) * (lado === "m" ? 7 : 13));
+    };
+    const poolM = montarPool("m"), poolV = montarPool("v");
+    const base = Date.now();
+    const saida = [];
+    for (const p of d.parciais) {
+        const a = poolM.splice(0, p.mandante), b = poolV.splice(0, p.visitante);
+        // alterna os pontos dos dois times; o vencedor do set fecha por último, sem encerrar o set antes da hora
+        for (let i = 0; i < Math.max(a.length, b.length); i++) {
+            if (i < a.length) saida.push(a[i]);
+            if (i < b.length) saida.push(b[i]);
+        }
+    }
+    return saida.map((x, i) => ({ id: novoId() + i.toString(36), idJogo: jogo.idJogo, ts: base + i, ...x }));
+}
+
+$("pos-jogo").addEventListener("toggle", () => renderizarPosJogo(false));
+$("pos-jogo-corpo").addEventListener("input", atualizarResumoPosJogo);
+
+$("pos-jogo-corpo").addEventListener("click", async (e) => {
+    if (!e.target.closest("#btn-salvar-pos-jogo")) return;
+    const jogo = jogoAtual();
+    const d = lerPosJogo();
+    if (!jogo || d.vazio) { alert("Informe as parciais dos sets antes de salvar."); return; }
+    if (d.erro) { alert(d.erro); return; }
+    if (d.errosMandante < 0 || d.errosVisitante < 0) { alert("Os pontos das atletas passam dos pontos do time nas parciais. Confira os números."); return; }
+    if ((d.errosVisitante > 0 && !elencoDe(jogo.idVisitante).length) || (d.errosMandante > 0 && !elencoDe(jogo.idMandante).length)) {
+        alert("Um dos times não tem atletas cadastradas para receber os erros do adversário."); return;
+    }
+    const novas = gerarJogadasPosJogo(jogo, d);
+    // conferência de segurança: o placar das jogadas geradas tem de ser igual às parciais digitadas
+    const conf = calcularPlacar(jogo, atletas, novas);
+    const confere = conf.encerrado && conf.sets.length === d.parciais.length &&
+        conf.sets.every((s, i) => s.mandante === d.parciais[i].mandante && s.visitante === d.parciais[i].visitante);
+    if (!confere) { alert("Não foi possível montar as jogadas a partir desses números. Confira as parciais e os pontos das atletas."); return; }
+
+    const casa = timesDaCategoria().find((t) => String(t.id) === String(jogo.idMandante));
+    const fora = timesDaCategoria().find((t) => String(t.id) === String(jogo.idVisitante));
+    const existentes = jogadas.filter((j) => String(j.idJogo) === String(jogo.idJogo));
+    if (!confirm(`Salvar ${casa?.nome || "mandante"} ${d.sets.m} × ${d.sets.v} ${fora?.nome || "visitante"} (${d.parciais.map((p) => p.mandante + "x" + p.visitante).join(", ")})?` +
+        (existentes.length ? `\n\nAs ${existentes.length} jogada(s) atuais deste jogo serão substituídas.` : "") +
+        `\nO resultado entra na classificação.`)) return;
+
+    // 1) neste navegador
+    jogadas = jogadas.filter((j) => String(j.idJogo) !== String(jogo.idJogo)).concat(novas);
+    gravar(K_JOGADAS, jogadas);
+    const salvos = ler(K_JOGOS).filter((x) => String(x.idJogo) !== String(jogo.idJogo));
+    salvos.push({
+        idJogo: jogo.idJogo, categoria: jogo.categoria, idMandante: jogo.idMandante, idVisitante: jogo.idVisitante,
+        setsMandante: d.sets.m, setsVisitante: d.sets.v, jogado: true, finalizadoEm: new Date().toISOString()
+    });
+    gravar(K_JOGOS, salvos);
+    Object.assign(jogo, { setsMandante: d.sets.m, setsVisitante: d.sets.v, jogado: true });
+
+    // 2) no Supabase
+    existentes.forEach((j) => nuvemEnfileirar({ t: "jogada-del", id: String(j.id) }));
+    let aviso = "";
+    if (nuvem && (await nuvemUsuario())) {
+        const erro = await enviarEmLotes("jogadas", novas.map(jogadaParaLinha), "id", 500);
+        if (erro) { novas.forEach((j) => nuvemEnfileirar({ t: "jogada", d: jogadaParaLinha(j) })); aviso = "\n\nAs jogadas ficaram na fila de envio ao banco (" + erro + ")."; }
+    } else {
+        novas.forEach((j) => nuvemEnfileirar({ t: "jogada", d: jogadaParaLinha(j) }));
+        aviso = "\n\nEntre na conta de administrador para enviar ao banco.";
+    }
+    nuvemEnfileirar({ t: "jogo", d: jogoParaLinha(salvos[salvos.length - 1]) });
+    renderizarTudo();
+    renderizarPosJogo(true);
+    alert("Jogo salvo! Placar, parciais e pontuação das atletas foram atualizados." + aviso);
+});
+
 // ===== BACKUP =====
 $("btn-exportar").addEventListener("click", () => {
     // Este arquivo é o que o site público lê: suba-o no GitHub com o nome dados.json
@@ -503,6 +710,73 @@ $("arquivo-backup").addEventListener("change", (e) => {
     e.target.value = "";
 });
 
+// ===== LIMPEZA ÚNICA DOS ERROS INDIVIDUAIS =====
+// O botão "Erro" de cada atleta foi removido. Aqui apagamos (uma única vez) os erros
+// individuais já lançados em Gerdau Minas x Brusque, no navegador e no Supabase.
+const K_LIMPEZA_ERROS = "volleyStats_limpeza_erros_individuais";
+function limparErrosIndividuaisAntigos() {
+    try { if (localStorage.getItem(K_LIMPEZA_ERROS)) return; } catch (e) { return; }
+    const jogo = jogos.find((j) => j.categoria === "F" && String(j.idMandante) === "6" && String(j.idVisitante) === "3" && chaveRodada(j) === "T-1");
+    if (!jogo) return;
+    const antigas = jogadas.filter((j) => j.tipo === "erro" && String(j.idJogo) === String(jogo.idJogo));
+    if (antigas.length) {
+        const ids = new Set(antigas.map((j) => String(j.id)));
+        jogadas = jogadas.filter((j) => !ids.has(String(j.id)));
+        gravar(K_JOGADAS, jogadas);
+        antigas.forEach((j) => nuvemEnfileirar({ t: "jogada-del", id: String(j.id) }));
+    }
+    try { localStorage.setItem(K_LIMPEZA_ERROS, "1"); } catch (e) { /* ignora */ }
+}
+
+// Importa SÓ a pontuação (jogadas + resultado do jogo) de um backup. Atletas e fotos não são mexidos.
+// Erro individual antigo ("erro") entra como erro do time ("erro_time"): o ponto do adversário
+// continua valendo, então o placar fica igual ao original.
+$("arquivo-pontuacao").addEventListener("change", (e) => {
+    const arquivo = e.target.files[0];
+    if (!arquivo) return;
+    const leitor = new FileReader();
+    leitor.onload = async () => {
+        try {
+            const d = JSON.parse(leitor.result);
+            if (!Array.isArray(d.jogadas)) throw new Error("formato");
+            const novas = d.jogadas.map((j) => (j.tipo === "erro" ? { ...j, tipo: "erro_time" } : j));
+            const idsJogos = new Set(novas.map((j) => String(j.idJogo)));
+            const idsNovas = new Set(novas.map((j) => String(j.id)));
+            const resultados = Array.isArray(d.jogos) ? d.jogos.filter((g) => g.jogado) : [];
+            if (!confirm(`Importar ${novas.length} jogada(s) de ${idsJogos.size} jogo(s)` +
+                (resultados.length ? ` e ${resultados.length} resultado(s)` : "") +
+                `?\n\nAs jogadas atuais desses jogos serão substituídas. Atletas e fotos NÃO mudam.`)) return;
+
+            // 1) neste navegador: troca as jogadas desses jogos
+            const antigas = jogadas.filter((j) => idsJogos.has(String(j.idJogo)));
+            jogadas = jogadas.filter((j) => !idsJogos.has(String(j.idJogo))).concat(novas);
+            gravar(K_JOGADAS, jogadas);
+            if (resultados.length) {
+                const ids = new Set(resultados.map((g) => String(g.idJogo)));
+                gravar(K_JOGOS, ler(K_JOGOS).filter((g) => !ids.has(String(g.idJogo))).concat(resultados));
+                jogos.splice(0, jogos.length, ...carregarJogos());
+            }
+
+            // 2) no Supabase: apaga as antigas que não voltam e envia as novas
+            antigas.filter((j) => !idsNovas.has(String(j.id)))
+                .forEach((j) => nuvemEnfileirar({ t: "jogada-del", id: String(j.id) }));
+            let aviso = "";
+            if (nuvem && (await nuvemUsuario())) {
+                const erro = await enviarEmLotes("jogadas", novas.map(jogadaParaLinha), "id", 500);
+                if (erro) { novas.forEach((j) => nuvemEnfileirar({ t: "jogada", d: jogadaParaLinha(j) })); aviso = "\n\nAs jogadas ficam na fila de envio ao banco (" + erro + ")."; }
+            } else {
+                novas.forEach((j) => nuvemEnfileirar({ t: "jogada", d: jogadaParaLinha(j) }));
+                aviso = "\n\nEntre na conta de administrador para enviar ao banco.";
+            }
+            resultados.forEach((g) => nuvemEnfileirar({ t: "jogo", d: jogoParaLinha(g) }));
+            renderizarTudo();
+            alert(`Pontuação importada: ${novas.length} jogada(s).` + aviso);
+        } catch (err) { alert("Arquivo inválido."); }
+    };
+    leitor.readAsText(arquivo);
+    e.target.value = "";
+});
+
 // ===== SINCRONIZAÇÃO COM O SUPABASE =====
 // Envia o que está na fila e depois baixa o banco, que é a fonte oficial dos dados.
 async function sincronizarDaNuvem() {
@@ -530,6 +804,7 @@ async function sincronizarDaNuvem() {
     gravar(K_JOGADAS, jogadas);
     gravar(K_JOGOS, dados.jogos);
     jogos.splice(0, jogos.length, ...carregarJogos());
+    limparErrosIndividuaisAntigos();
     renderizarTudo();
     document.dispatchEvent(new CustomEvent("nuvem-status"));
 }

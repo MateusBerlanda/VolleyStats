@@ -611,6 +611,14 @@ main section {
     cursor: pointer;
 }
 
+/* Botão de erro dentro da coluna de cada time do placar */
+.placar-time .btn-erro-time {
+    width: 100%;
+    margin-top: 4px;
+    padding: 9px 6px;
+    font-size: .8rem;
+}
+
 .btn-erro-time:disabled {
     opacity: .5;
     cursor: not-allowed;
@@ -618,4 +626,232 @@ main section {
 
 #btn-excluir-todas-jogadas {
     margin-top: 8px;
+}
+
+/* Centro do placar: sets ganhos (ex.: 1x0) e parciais dos sets terminados (ex.: 25x22) */
+.placar-centro .sets-grande {
+    font-size: 1.7rem;
+    line-height: 1;
+    font-weight: 900;
+    letter-spacing: .02em;
+    color: #102a56;
+    white-space: nowrap;
+}
+
+.placar-centro .parciais {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.placar-centro .parcial {
+    font-size: .8rem;
+    font-weight: 800;
+    color: #52627a;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ===== Cartão de lançamento de cada atleta (repaginado) ===== */
+#cards.cards-atletas {
+    grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr));
+    gap: 14px;
+}
+
+#cards .atleta {
+    width: auto;
+    padding: 14px;
+    background: #fff;
+    border: 1px solid var(--borda);
+    border-radius: 16px;
+    box-shadow: 0 4px 14px rgba(16, 42, 86, .07);
+}
+
+#cards .atleta-topo {
+    gap: 12px;
+}
+
+#cards .atleta-topo .foto-mini {
+    width: 52px;
+    height: 52px;
+    border: 2px solid var(--rosa);
+    padding: 1px;
+    background: #fff;
+}
+
+#cards .atleta .info strong {
+    display: block;
+    font-size: 1rem;
+    line-height: 1.2;
+    color: var(--azul);
+}
+
+#cards .atleta .info small {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 3px;
+    font-size: .8rem;
+}
+
+#cards .camisa {
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--azul);
+    color: #fff;
+    font-size: .72rem;
+    font-weight: 800;
+}
+
+#cards .pts-badge {
+    flex: none;
+    min-width: 52px;
+    padding: 6px 8px;
+    border-radius: 12px;
+    background: #fdecf3;
+    color: var(--rosa);
+    text-align: center;
+    line-height: 1;
+}
+
+#cards .pts-badge b {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 900;
+}
+
+#cards .pts-badge span {
+    font-size: .66rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+#cards .botoes-stat {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--borda);
+}
+
+#cards .btn-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 68px;
+    padding: 8px 4px;
+    border-radius: 12px;
+    box-shadow: 0 3px 0 rgba(0, 0, 0, .18);
+}
+
+#cards .btn-stat:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, .18);
+}
+
+#cards .stat-rotulo {
+    font-size: .78rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+#cards .btn-stat small {
+    font-size: 1.4rem;
+    line-height: 1;
+}
+
+#cards .stat-ataque {
+    background: var(--azul-medio);
+}
+
+#cards .stat-bloqueio {
+    background: var(--azul);
+}
+
+#cards .stat-saque {
+    background: var(--rosa);
+}
+
+/* ===== Lançar pelo resultado final (pós-jogo) ===== */
+.pos-jogo>summary {
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 1.05rem;
+    color: var(--azul);
+}
+
+.pos-jogo[open]>summary {
+    margin-bottom: 12px;
+}
+
+.pos-sets {
+    display: grid;
+    gap: 8px;
+    max-width: 360px;
+}
+
+.pos-set {
+    display: grid;
+    grid-template-columns: 1fr 76px 18px 76px;
+    align-items: center;
+    gap: 8px;
+}
+
+.pos-set span {
+    text-align: center;
+    font-weight: 800;
+    color: var(--azul);
+}
+
+.campo.num {
+    width: 100%;
+    min-width: 0;
+    text-align: center;
+    padding: 8px 4px;
+}
+
+.tabela-pos {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .9rem;
+}
+
+.tabela-pos th {
+    text-align: center;
+    padding: 6px 4px;
+    color: var(--azul);
+}
+
+.tabela-pos th:first-child,
+.tabela-pos td:first-child {
+    text-align: left;
+    white-space: nowrap;
+    padding-right: 8px;
+}
+
+.tabela-pos td {
+    padding: 3px 4px;
+    border-top: 1px solid var(--borda);
+}
+
+.tabela-pos .campo.num {
+    width: 64px;
+}
+
+.pos-resumo {
+    margin: 14px 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #eef3fb;
+    color: var(--azul);
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.pos-resumo.pos-erro {
+    background: #fdecec;
+    color: #b42318;
 }

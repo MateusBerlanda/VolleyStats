@@ -6,8 +6,10 @@
 // Precisa do STATS (atletas.js).
 
 function calcularPlacar(jogo, atletas, jogadas) {
-    const resultado = { mandante: 0, visitante: 0, setsMandante: 0, setsVisitante: 0,
-        setAtual: 1, encerrado: false, ultimoSet: null };
+    const resultado = {
+        mandante: 0, visitante: 0, setsMandante: 0, setsVisitante: 0,
+        setAtual: 1, encerrado: false, ultimoSet: null, sets: []
+    };   // sets = parciais dos sets já terminados
     if (!jogo) return resultado;
     const porId = new Map(atletas.map((a) => [String(a.id), a]));
     const eventos = jogadas
@@ -34,8 +36,11 @@ function calcularPlacar(jogo, atletas, jogadas) {
             const vencedor = resultado.mandante > resultado.visitante ? 'mandante' : 'visitante';
             if (vencedor === 'mandante') resultado.setsMandante++;
             else resultado.setsVisitante++;
-            resultado.ultimoSet = { numero: resultado.setAtual, mandante: resultado.mandante,
-                visitante: resultado.visitante, vencedor };
+            resultado.ultimoSet = {
+                numero: resultado.setAtual, mandante: resultado.mandante,
+                visitante: resultado.visitante, vencedor
+            };
+            resultado.sets.push(resultado.ultimoSet);
             if (resultado.setsMandante === 3 || resultado.setsVisitante === 3) {
                 resultado.encerrado = true;
             } else {

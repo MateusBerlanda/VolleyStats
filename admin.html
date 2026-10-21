@@ -77,6 +77,14 @@
             <div id="cards" class="cards-atletas"></div>
         </section>
 
+        <!-- 2b) LANÇAR PELO RESULTADO FINAL: jogos que não deu para acompanhar -->
+        <section class="prin" id="pos-jogo-secao">
+            <details id="pos-jogo" class="pos-jogo">
+                <summary>Lançar pelo resultado final (jogo que não acompanhei)</summary>
+                <div id="pos-jogo-corpo"></div>
+            </details>
+        </section>
+
         <!-- 3) HISTÓRICO / DESFAZER -->
         <section>
             <h2>Últimas jogadas</h2>
@@ -130,6 +138,10 @@
                 <button id="btn-exportar" class="btn-salvar" type="button">Exportar backup (JSON)</button>
                 <label class="btn-mini" for="arquivo-backup">Importar backup</label>
                 <input id="arquivo-backup" type="file" accept="application/json,.json" class="sr-only">
+                <label class="btn-mini" for="arquivo-pontuacao"
+                    title="Importa só as jogadas e o resultado; atletas e fotos não mudam">Importar só a
+                    pontuação</label>
+                <input id="arquivo-pontuacao" type="file" accept="application/json,.json" class="sr-only">
             </div>
         </section>
     </main>

@@ -184,7 +184,7 @@ function renderizarAtletas() {
             <img class="foto-media" src="${esc(fotoDe(a))}" alt="" loading="lazy">
             <strong>#${a.numero == null ? "—" : a.numero} ${esc(a.nome)}</strong>
             <small>${esc(rotuloPosicao(a.posicao, a.categoria))}</small>
-            <small>${t.pontos} pts · ${t.erro} erros</small>
+            <small>${t.pontos} pts</small>
         </article>`;
     }).join("") || '<p class="legenda">Nenhum atleta cadastrado neste time.</p>';
 }
